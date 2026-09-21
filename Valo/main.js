@@ -233,6 +233,13 @@ class Game {
       this.viewModel.setRainbow(this.rainbow);
       return this.rainbow ? 'RAINBOW ON' : 'RAINBOW OFF';
     };
+    // "health" — restore the current life bar without changing shields or reviving.
+    this._commands.health = () => {
+      if (this._dead) return 'RESPAWN TO HEAL';
+      this.health = 150;
+      this.hud.setHealth(this.health);
+      return 'HEALTH FULL';
+    };
     // "boton" — spawn the enemy bots; "botoff" — remove them.
     this._commands.boton = () => {
       if (this.bots.list.length) return 'BOTS ALREADY ON';
