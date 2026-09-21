@@ -130,6 +130,9 @@ class Game {
     this.minimap = new Minimap(document.getElementById('hud'), {
       areas: map.areas, walls: map.walls, covers: map.covers, bounds: map.bounds,
     });
+    // The imported arena is the source of truth for visible walls. Upgrade the
+    // minimap from its startup layout once the GLB has finished loading.
+    map.ready?.then(({ minimapWalls }) => this.minimap.setWalls(minimapWalls));
 
     this.esp = new ESP(document.getElementById('hud'), this.camera.camera);
 

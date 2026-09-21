@@ -38,6 +38,14 @@ export class Minimap {
   _wx(x) { return this._ox + x * this._s; }
   _wz(z) { return this._oz + z * this._s; }
 
+  // The visual arena arrives asynchronously. Replace the startup fallback
+  // lines with its real wall footprints as soon as the GLB has loaded.
+  setWalls(walls) {
+    if (!Array.isArray(walls) || walls.length === 0) return;
+    this.walls = walls;
+    this._drawStatic();
+  }
+
   _drawStatic() {
     const c = document.createElement('canvas');
     c.width = this.canvas.width; c.height = this.canvas.height;
@@ -55,6 +63,17 @@ export class Minimap {
     // makes the drawn lanes agree with the current imported arena: a route is
     // open only where the player can actually pass.
     for (const w of this.walls) {
+      if (w.minX != null) {
+        const x = this._wx(w.minX), y = this._wz(w.minZ);
+        const width = Math.max(2, (w.maxX - w.minX) * this._s);
+        const height = Math.max(2, (w.maxZ - w.minZ) * this._s);
+        g.fillStyle = '#20292d';
+        g.fillRect(x, y, width, height);
+        g.strokeStyle = 'rgba(205, 215, 211, 0.48)';
+        g.lineWidth = 1;
+        g.strokeRect(x + 0.5, y + 0.5, Math.max(0, width - 1), Math.max(0, height - 1));
+        continue;
+      }
       const thick = Math.max(0.7, w.thickness || 0.7);
       const minX = Math.min(w.x1, w.x2) - (w.x1 === w.x2 ? thick / 2 : 0);
       const maxX = Math.max(w.x1, w.x2) + (w.x1 === w.x2 ? thick / 2 : 0);

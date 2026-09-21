@@ -356,6 +356,7 @@ function buildSunlineArena(scene) {
       // Mid_H_* / Mid_V_*), which the height filter below also rejects.
       arena.updateMatrixWorld(true);
       const visualBounds = new THREE.Box3();
+      const importedMinimapWalls = [];
       const isPlayerBlocker = (name) =>
         /^(?:Wall_|(?:East|West|North|South)_Perimeter|Spawn_Windbreak|Frame[LR]_|Web_cube|.*Cover.*|.*_base)/.test(name)
         && !/^FrameTop/.test(name) && !/_cap$/.test(name);
@@ -365,8 +366,18 @@ function buildSunlineArena(scene) {
         const h = visualBounds.max.y - visualBounds.min.y;
         if (h < 0.6 || visualBounds.max.y <= 0.25) return;
         world.addBox(visualBounds.min.clone(), visualBounds.max.clone(), { walkable: false });
+        // Covers are already drawn from their gameplay footprints. Every other
+        // visible blocker is a true map wall/frame and is copied directly to
+        // the minimap in world coordinates. This makes future GLB wall edits
+        // show up on the tactical map without a second hand-authored layout.
+        if (!/(?:Cover|_base)/.test(object.name)) {
+          importedMinimapWalls.push({
+            minX: visualBounds.min.x, maxX: visualBounds.max.x,
+            minZ: visualBounds.min.z, maxZ: visualBounds.max.z,
+          });
+        }
       });
-      resolveReady({ arena, loaded: true });
+      resolveReady({ arena, loaded: true, minimapWalls: importedMinimapWalls });
     },
     undefined,
     (error) => {
