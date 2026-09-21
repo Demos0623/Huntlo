@@ -1,5 +1,7 @@
-// Keep the map legend in lockstep with the floor tints in World/Arena.js.
-const ZONE_FILL = { teal: '#2f8178', gray: '#7395a8', mauve: '#9b515d' };
+// Sunline's imported arena uses stone floors, plaster walls and wood cover.
+// Keep the tactical view in that same neutral palette rather than retaining
+// the old teal/mauve blockout colors.
+const ZONE_FILL = { teal: '#667772', gray: '#77817f', mauve: '#726c68' };
 
 export class Minimap {
   constructor(root, { areas, walls, covers, bounds }) {
@@ -11,18 +13,24 @@ export class Minimap {
     this.wrap = document.createElement('div');
     this.wrap.id = 'v-minimap';
     this.canvas = document.createElement('canvas');
-    this.canvas.width = 220; this.canvas.height = 240;
+    // Match the canvas aspect ratio to the *current* arena bounds. The old
+    // fixed 220×240 canvas was too wide for Sunline's 50×66 play space, so
+    // the map stopped short of the right edge of its black HUD frame.
+    const pad = 10;
+    const wW = this.b.maxX - this.b.minX, wD = this.b.maxZ - this.b.minZ;
+    this.canvas.width = 220;
+    this.canvas.height = Math.ceil((this.canvas.width - pad * 2) * (wD / wW) + pad * 2);
     this.wrap.appendChild(this.canvas);
     root.appendChild(this.wrap);
     this.ctx = this.canvas.getContext('2d');
 
-    const pad = 10;
-    const wW = this.b.maxX - this.b.minX, wD = this.b.maxZ - this.b.minZ;
     const sx = (this.canvas.width - pad * 2) / wW;
     const sz = (this.canvas.height - pad * 2) / wD;
     this._s = Math.min(sx, sz);
-    this._ox = pad - this.b.minX * this._s;
-    this._oz = pad - this.b.minZ * this._s;
+    // Centre the exact playable footprint in the available space. This also
+    // keeps future non-square map revisions visually balanced.
+    this._ox = pad + (this.canvas.width - pad * 2 - wW * this._s) / 2 - this.b.minX * this._s;
+    this._oz = pad + (this.canvas.height - pad * 2 - wD * this._s) / 2 - this.b.minZ * this._s;
 
     this._drawStatic();
   }
@@ -34,7 +42,7 @@ export class Minimap {
     const c = document.createElement('canvas');
     c.width = this.canvas.width; c.height = this.canvas.height;
     const g = c.getContext('2d');
-    g.fillStyle = 'rgba(14,17,22,0.7)';
+    g.fillStyle = '#11171a';
     g.fillRect(0, 0, c.width, c.height);
 
     for (const a of this.areas) {
@@ -43,8 +51,11 @@ export class Minimap {
         Math.ceil(a.w * this._s), Math.ceil(a.d * this._s));
     }
 
-    g.strokeStyle = 'rgba(207,214,226,0.75)';
-    g.lineWidth = 1; g.lineCap = 'round';
+    // The two-pass wall treatment mirrors the actual plaster walls: a dark
+    // structural outline with a subtle edge highlight, so routes read cleanly
+    // without reverting to the old abstract line drawing.
+    g.strokeStyle = '#20292d';
+    g.lineWidth = Math.max(3, this._s * 0.48); g.lineCap = 'square';
     g.beginPath();
     for (const w of this.walls) {
       g.moveTo(this._wx(w.x1), this._wz(w.z1));
@@ -52,8 +63,17 @@ export class Minimap {
     }
     g.stroke();
 
-    g.fillStyle = 'rgba(196,182,150,0.7)';
-    g.strokeStyle = 'rgba(20,24,30,0.8)';
+    g.strokeStyle = 'rgba(205, 215, 211, 0.48)';
+    g.lineWidth = 1;
+    g.beginPath();
+    for (const w of this.walls) {
+      g.moveTo(this._wx(w.x1), this._wz(w.z1));
+      g.lineTo(this._wx(w.x2), this._wz(w.z2));
+    }
+    g.stroke();
+
+    g.fillStyle = '#806a4c';
+    g.strokeStyle = '#2b251f';
     g.lineWidth = 1;
     for (const cv of this.covers) {
       const x = this._wx(cv.cx - cv.w / 2), y = this._wz(cv.cz - cv.d / 2);
