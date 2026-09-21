@@ -73,6 +73,8 @@ export class ViewModel {
     this._swayVel = new THREE.Vector3();
     this._rainbow = false;
     this._rainbowAccents = [];
+    this._rainbowColorA = new THREE.Color();
+    this._rainbowColorB = new THREE.Color();
 
     this._off = new THREE.Vector3();
     this._q = new THREE.Quaternion();
@@ -129,7 +131,7 @@ export class ViewModel {
   _updateRainbowAccents() {
     if (!this._rainbow) return;
     this._collectRainbowAccents();
-    const hue = (this._time * 0.12) % 1;
+    const hue = (this._time * 0.42) % 1;
     this._rainbowAccents.forEach((accent, index) => {
       const h = (hue + index * 0.075) % 1;
       accent.mat.color.setHSL(h, 0.92, 0.55);
@@ -313,7 +315,14 @@ export class ViewModel {
       }
       pos[i * 3] = p.px || 0; pos[i * 3 + 1] = p.py || 0; pos[i * 3 + 2] = p.pz || 0;
 
-      col[i * 3] = 1.0 * a; col[i * 3 + 1] = 0.82 * a; col[i * 3 + 2] = 0.4 * a;
+      if (this._rainbow) {
+        this._rainbowColorA.setHSL((this._time * 0.42 + i * 0.11) % 1, 0.95, 0.62);
+        col[i * 3] = this._rainbowColorA.r * a;
+        col[i * 3 + 1] = this._rainbowColorA.g * a;
+        col[i * 3 + 2] = this._rainbowColorA.b * a;
+      } else {
+        col[i * 3] = 1.0 * a; col[i * 3 + 1] = 0.82 * a; col[i * 3 + 2] = 0.4 * a;
+      }
     }
     this._points.geometry.attributes.position.needsUpdate = true;
     this._points.geometry.attributes.color.needsUpdate = true;
@@ -360,8 +369,17 @@ export class ViewModel {
       positions.set([s.tip.x, s.tip.y, s.tip.z], i * 6);
       positions.set([s.base.x, s.base.y, s.base.z], i * 6 + 3);
 
-      colors.set([0.95 * a, 0.7 * a, 0.22 * a], i * 6);
-      colors.set([0.6 * a, 0.4 * a, 0.1 * a], i * 6 + 3);
+      if (this._rainbow) {
+        // Offset each ribbon segment so the moving trail contains the whole
+        // spectrum, rather than flashing one flat color at a time.
+        this._rainbowColorA.setHSL((this._time * 0.42 + i * 0.09) % 1, 0.96, 0.62);
+        this._rainbowColorB.setHSL((this._time * 0.42 + i * 0.09 + 0.055) % 1, 0.96, 0.46);
+        colors.set([this._rainbowColorA.r * a, this._rainbowColorA.g * a, this._rainbowColorA.b * a], i * 6);
+        colors.set([this._rainbowColorB.r * a, this._rainbowColorB.g * a, this._rainbowColorB.b * a], i * 6 + 3);
+      } else {
+        colors.set([0.95 * a, 0.7 * a, 0.22 * a], i * 6);
+        colors.set([0.6 * a, 0.4 * a, 0.1 * a], i * 6 + 3);
+      }
     }
     const indices = [];
     for (let i = 0; i < n - 1; i++) {

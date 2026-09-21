@@ -10,9 +10,11 @@ export class HitSystem {
     this._effectRoot = new THREE.Group();
     scene.add(this._effectRoot);
     this.damageMul = 1;
+    this.rainbow = false;
   }
 
   setColliders(colliders) { this.colliders = colliders; }
+  setRainbow(on) { this.rainbow = !!on; }
 
   fireRay(origin, dir, spread, def, tracerFrom = null) {
     const shotDir = this._applySpread(dir, spread);
@@ -108,9 +110,12 @@ export class HitSystem {
     const mid = from.clone().addScaledVector(dir, len * 0.5);
     const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
 
+    const hue = (performance.now() * 0.00042) % 1;
+    const coreColor = this.rainbow ? new THREE.Color().setHSL(hue, 0.96, 0.66) : 0xfff2c4;
+    const haloColor = this.rainbow ? new THREE.Color().setHSL((hue + 0.07) % 1, 0.96, 0.52) : 0xffbb55;
     const core = new THREE.Mesh(
       new THREE.CylinderGeometry(0.012, 0.012, len, 6, 1, true),
-      new THREE.MeshBasicMaterial({ color: 0xfff2c4, transparent: true, opacity: 0.95,
+      new THREE.MeshBasicMaterial({ color: coreColor, transparent: true, opacity: 0.95,
         blending: THREE.AdditiveBlending, depthWrite: false })
     );
     core.position.copy(mid); core.quaternion.copy(quat);
@@ -119,7 +124,7 @@ export class HitSystem {
 
     const halo = new THREE.Mesh(
       new THREE.CylinderGeometry(0.03, 0.03, len, 6, 1, true),
-      new THREE.MeshBasicMaterial({ color: 0xffbb55, transparent: true, opacity: 0.4,
+      new THREE.MeshBasicMaterial({ color: haloColor, transparent: true, opacity: 0.4,
         blending: THREE.AdditiveBlending, depthWrite: false })
     );
     halo.position.copy(mid); halo.quaternion.copy(quat);

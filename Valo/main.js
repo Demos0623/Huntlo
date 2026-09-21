@@ -231,6 +231,7 @@ class Game {
     this._commands.rainbow = () => {
       this.rainbow = !this.rainbow;
       this.viewModel.setRainbow(this.rainbow);
+      this.hitSystem.setRainbow(this.rainbow);
       return this.rainbow ? 'RAINBOW ON' : 'RAINBOW OFF';
     };
     // "health" — restore the current life bar without changing shields or reviving.
