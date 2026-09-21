@@ -132,7 +132,10 @@ class Game {
     });
     // The imported arena is the source of truth for visible walls. Upgrade the
     // minimap from its startup layout once the GLB has finished loading.
-    map.ready?.then(({ minimapWalls }) => this.minimap.setWalls(minimapWalls));
+    map.ready?.then(({ minimapWalls, minimapCovers }) => {
+      this.minimap.setWalls(minimapWalls);
+      this.minimap.setCovers(minimapCovers);
+    });
 
     this.esp = new ESP(document.getElementById('hud'), this.camera.camera);
 

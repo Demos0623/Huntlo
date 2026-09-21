@@ -46,6 +46,12 @@ export class Minimap {
     this._drawStatic();
   }
 
+  setCovers(covers) {
+    if (!Array.isArray(covers)) return;
+    this.covers = covers;
+    this._drawStatic();
+  }
+
   _drawStatic() {
     const c = document.createElement('canvas');
     c.width = this.canvas.width; c.height = this.canvas.height;
