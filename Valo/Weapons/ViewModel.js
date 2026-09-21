@@ -23,6 +23,7 @@ export class ViewModel {
     this._trailMax = 16;
     this._trailPos = [];
     this._prevTip = null;
+    this._prevBase = null;
     this._trailMesh = new THREE.Mesh(
       new THREE.BufferGeometry(),
       new THREE.MeshBasicMaterial({
@@ -158,25 +159,30 @@ export class ViewModel {
 
     this._spinner = model.userData.spinner || null;
 
+    const m = model.userData.muzzle || { x: 0, y: 0, z: -0.4 };
+    // Imported models include these anchors. Procedural fallbacks get a pair
+    // derived from their muzzle so every gun (including the Sheriff) supports
+    // the cosmetic rainbow ribbon.
+    const trailTip = model.userData.trailTip || new THREE.Vector3(m.x, m.y, m.z);
+    const trailBase = model.userData.trailBase || new THREE.Vector3(m.x, m.y - 0.025, m.z + 0.12);
     this._tipMarker = null; this._baseMarker = null;
-    if (model.userData.trailTip) {
+    if (trailTip) {
       const parent = this._spinner || this.group;
       this._tipMarker = new THREE.Object3D();
-      this._tipMarker.position.copy(model.userData.trailTip);
+      this._tipMarker.position.copy(trailTip);
       parent.add(this._tipMarker);
       this._baseMarker = new THREE.Object3D();
-      this._baseMarker.position.copy(model.userData.trailBase);
+      this._baseMarker.position.copy(trailBase);
       parent.add(this._baseMarker);
     }
     this._trailPos.length = 0;
-    this._prevTip = null;
+    this._prevTip = null; this._prevBase = null;
     if (this._trailMesh) this._trailMesh.visible = false;
 
     this._meleeSpinning = false;
     this._meleeSpin = 0;
     this._drawSpinT = this._spinner ? 0.55 : 0;
 
-    const m = model.userData.muzzle || { x: 0, y: 0, z: -0.4 };
     this._flashGroup = new THREE.Group();
     this._flashGroup.position.set(m.x, m.y, m.z);
     const flashMat = () => new THREE.MeshBasicMaterial({
@@ -256,7 +262,7 @@ export class ViewModel {
 
     this._animateMagazine();
     this._applyTransform(dt, moveState);
-    this._updateTrail(dt);
+    this._updateTrail(dt, fired);
     this._updateParticles(dt);
   }
 
@@ -298,7 +304,9 @@ export class ViewModel {
   _updateParticles(dt) {
     if (PERF) { if (this._points) this._points.visible = false; return; }
     const pts = this._points;
-    if (!this._isMelee || this._scoped) {
+    // Gun spark particles are an explicit rainbow-only cosmetic. The normal
+    // firing presentation stays unchanged while the code is off.
+    if ((!this._isMelee && !this._rainbow) || this._scoped) {
       if (pts) pts.visible = false;
       for (const p of this._pData) p.life = 0;
       return;
@@ -333,12 +341,12 @@ export class ViewModel {
     pts.visible = live > 0;
   }
 
-  _updateTrail(dt) {
+  _updateTrail(dt, fired = false) {
     if (PERF) { if (this._trailMesh) this._trailMesh.visible = false; return; }
     const mesh = this._trailMesh;
     if (!this._tipMarker || this._scoped) {
       if (mesh) mesh.visible = false;
-      this._trailPos.length = 0; this._prevTip = null;
+      this._trailPos.length = 0; this._prevTip = null; this._prevBase = null;
       return;
     }
 
@@ -348,14 +356,21 @@ export class ViewModel {
 
     const flourish = this._isMelee
       ? (this._meleeSpinning || this._drawSpinT > 0 || this._swingT > 0 || this._hitSpinT > 0)
-      : (this._id === 'marker' && this._inspectT > 0);
+      : (this._id === 'marker' && this._inspectT > 0) || (this._rainbow && fired);
 
     if (this._prevTip) this._tipVel = tip.clone().sub(this._prevTip).multiplyScalar(1 / Math.max(dt, 1e-4));
     else this._tipVel = new THREE.Vector3();
-    this._prevTip = tip.clone();
+    const previousTip = this._prevTip;
+    const previousBase = this._prevBase;
+    this._prevTip = tip.clone(); this._prevBase = base.clone();
     if (flourish) {
+      // A single semi-auto shot needs two ribbon cross-sections; otherwise a
+      // Sheriff shot would only have one point and no visible trail.
+      if (this._rainbow && fired && !this._isMelee && previousTip && previousBase) {
+        this._trailPos.push({ tip: previousTip.clone(), base: previousBase.clone(), life: 0.6 });
+      }
       this._trailPos.push({ tip: tip.clone(), base: base.clone(), life: 1 });
-      if (this._isMelee) this._emitSparks(tip, this._tipVel);
+      if (this._isMelee || (this._rainbow && fired)) this._emitSparks(tip, this._tipVel);
     }
 
     for (const s of this._trailPos) s.life -= dt / 0.08;
