@@ -223,8 +223,8 @@ function buildSunlineArena(scene) {
   };
   const wall = (name, cx, cz, w, d) => {
     solid(name, cx, cz, w, d, 6.4);
-    if (w >= d) walls.push({ x1: cx - w / 2, z1: cz, x2: cx + w / 2, z2: cz });
-    else walls.push({ x1: cx, z1: cz - d / 2, x2: cx, z2: cz + d / 2 });
+    if (w >= d) walls.push({ x1: cx - w / 2, z1: cz, x2: cx + w / 2, z2: cz, thickness: d });
+    else walls.push({ x1: cx, z1: cz - d / 2, x2: cx, z2: cz + d / 2, thickness: w });
   };
 
   wall('west perimeter', -24.5, 0, 1, 66);
@@ -250,8 +250,8 @@ function buildSunlineArena(scene) {
   ];
   for (const [name, x, z, w, d, h] of currentInteriorWalls) {
     solid(name, x, z, w, d, h);
-    if (w >= d) walls.push({ x1: x - w / 2, z1: z, x2: x + w / 2, z2: z });
-    else walls.push({ x1: x, z1: z - d / 2, x2: x, z2: z + d / 2 });
+    if (w >= d) walls.push({ x1: x - w / 2, z1: z, x2: x + w / 2, z2: z, thickness: d });
+    else walls.push({ x1: x, z1: z - d / 2, x2: x, z2: z + d / 2, thickness: w });
   }
 
   // Side-route frames: columns block, overhead lintels stay above player height.

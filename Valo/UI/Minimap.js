@@ -51,26 +51,24 @@ export class Minimap {
         Math.ceil(a.w * this._s), Math.ceil(a.d * this._s));
     }
 
-    // The two-pass wall treatment mirrors the actual plaster walls: a dark
-    // structural outline with a subtle edge highlight, so routes read cleanly
-    // without reverting to the old abstract line drawing.
-    g.strokeStyle = '#20292d';
-    g.lineWidth = Math.max(3, this._s * 0.48); g.lineCap = 'square';
-    g.beginPath();
+    // Use the collision wall's real thickness instead of a generic line. This
+    // makes the drawn lanes agree with the current imported arena: a route is
+    // open only where the player can actually pass.
     for (const w of this.walls) {
-      g.moveTo(this._wx(w.x1), this._wz(w.z1));
-      g.lineTo(this._wx(w.x2), this._wz(w.z2));
+      const thick = Math.max(0.7, w.thickness || 0.7);
+      const minX = Math.min(w.x1, w.x2) - (w.x1 === w.x2 ? thick / 2 : 0);
+      const maxX = Math.max(w.x1, w.x2) + (w.x1 === w.x2 ? thick / 2 : 0);
+      const minZ = Math.min(w.z1, w.z2) - (w.z1 === w.z2 ? thick / 2 : 0);
+      const maxZ = Math.max(w.z1, w.z2) + (w.z1 === w.z2 ? thick / 2 : 0);
+      const x = this._wx(minX), y = this._wz(minZ);
+      const width = Math.max(2, (maxX - minX) * this._s);
+      const height = Math.max(2, (maxZ - minZ) * this._s);
+      g.fillStyle = '#20292d';
+      g.fillRect(x, y, width, height);
+      g.strokeStyle = 'rgba(205, 215, 211, 0.48)';
+      g.lineWidth = 1;
+      g.strokeRect(x + 0.5, y + 0.5, Math.max(0, width - 1), Math.max(0, height - 1));
     }
-    g.stroke();
-
-    g.strokeStyle = 'rgba(205, 215, 211, 0.48)';
-    g.lineWidth = 1;
-    g.beginPath();
-    for (const w of this.walls) {
-      g.moveTo(this._wx(w.x1), this._wz(w.z1));
-      g.lineTo(this._wx(w.x2), this._wz(w.z2));
-    }
-    g.stroke();
 
     g.fillStyle = '#806a4c';
     g.strokeStyle = '#2b251f';
