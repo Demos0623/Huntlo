@@ -60,6 +60,7 @@ export class HuntloRoom {
       moving:!!d.moving, stance:d.stance === 'crouch' ? 'crouch' : 'stand', grounded:!!d.grounded,
       seq:player.seq, wid:VALID_WEAPONS.has(d.wid) ? d.wid : 'vantage', hp:Number.isFinite(d.hp) ? d.hp : 150,
       dead:!!d.dead, team:d.team === 'defender' ? 'defender' : 'attacker', flashed:!!d.flashed,
+      muscle:!!d.muscle,
       name:String(d.name || `Player ${player.id}`).slice(0, 16) };
     return player.view;
   }

@@ -36,9 +36,34 @@ export class PlayerModel {
     this.legL = limb(-0.11, -0.755, 0.08, new THREE.BoxGeometry(0.16, 0.85, 0.19), DARK);
     this.legR = limb(0.11, -0.755, 0.08, new THREE.BoxGeometry(0.16, 0.85, 0.19), DARK);
 
+    // Optional power-build overlay. It stays cosmetic, so it never changes the
+    // player collision shape or hitbox.
+    this._muscleParts = [];
+    const muscleMat = new THREE.MeshStandardMaterial({ color: 0xd59658, roughness: 0.48, metalness: 0.08 });
+    const addMuscle = (parent, x, y, z, sx, sy, sz) => {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(0.13, 14, 12), muscleMat);
+      m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.castShadow = true;
+      parent.add(m); this._muscleParts.push(m);
+    };
+    // Shoulder caps, biceps, and a compact six-pack make the command readable
+    // even at multiplayer distance.
+    addMuscle(this.group, -0.23, -0.42, 0.04, 1.35, 0.85, 0.75);
+    addMuscle(this.group, 0.23, -0.42, 0.04, 1.35, 0.85, 0.75);
+    addMuscle(this.armL, 0, -0.16, 0, 1.0, 1.45, 0.9);
+    addMuscle(this.armR, 0, -0.16, 0, 1.0, 1.45, 0.9);
+    for (const y of [-0.58, -0.70, -0.82]) {
+      addMuscle(this.group, -0.09, y, -0.01, 0.72, 0.82, 0.36);
+      addMuscle(this.group, 0.09, y, -0.01, 0.72, 0.82, 0.36);
+    }
+    this.setMuscle(false);
+
     this._phase = 0;
     this._amp = 0;
     scene.add(this.group);
+  }
+
+  setMuscle(on) {
+    this._muscleParts.forEach((part) => { part.visible = !!on; });
   }
 
   update(eyePosition, yaw, moveState, dt = 0.016) {

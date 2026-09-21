@@ -67,6 +67,25 @@ class RemotePlayer {
     this.armR = limb(0.28, 1.37, 0, new THREE.BoxGeometry(0.12, 0.5, 0.14), 'main');
     this.legL = limb(-0.11, 0.85, 0, new THREE.BoxGeometry(0.16, 0.85, 0.19), 'dark');
     this.legR = limb(0.11, 0.85, 0, new THREE.BoxGeometry(0.16, 0.85, 0.19), 'dark');
+
+    // Cosmetic muscle overlay. These meshes deliberately do not enter `_parts`,
+    // keeping the character's networked hitboxes unchanged.
+    this._muscleParts = [];
+    const muscleMat = new THREE.MeshStandardMaterial({ color: 0xd59658, roughness: 0.48, metalness: 0.08 });
+    const addMuscle = (parent, x, y, z, sx, sy, sz) => {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(0.13, 14, 12), muscleMat);
+      m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.castShadow = true; m.raycast = () => {};
+      parent.add(m); this._muscleParts.push(m);
+    };
+    addMuscle(this.group, -0.23, 1.31, -0.03, 1.35, 0.85, 0.75);
+    addMuscle(this.group, 0.23, 1.31, -0.03, 1.35, 0.85, 0.75);
+    addMuscle(this.armL, 0, -0.16, 0, 1.0, 1.45, 0.9);
+    addMuscle(this.armR, 0, -0.16, 0, 1.0, 1.45, 0.9);
+    for (const y of [1.15, 1.03, 0.91]) {
+      addMuscle(this.group, -0.09, y, -0.16, 0.72, 0.82, 0.36);
+      addMuscle(this.group, 0.09, y, -0.16, 0.72, 0.82, 0.36);
+    }
+    this.setMuscle(false);
     this.setTeam('attacker');
 
     this._hitViz = new THREE.Group(); this._hitViz.visible = false;
@@ -147,6 +166,10 @@ class RemotePlayer {
     this.group.add(tag);
   }
 
+  setMuscle(on) {
+    this._muscleParts.forEach((part) => { part.visible = !!on; });
+  }
+
   setWeapon(wid) {
     if (wid === this._wid) return;
     this._wid = wid;
@@ -205,6 +228,7 @@ class RemotePlayer {
     if (d.wid) this.setWeapon(d.wid);
     if (d.name) this.setName(d.name);
     if (d.team) this.setTeam(d.team);
+    if (typeof d.muscle === 'boolean') this.setMuscle(d.muscle);
     if (d.dead) this.setDead(true); else if (this.dead && d.dead === false) this.setDead(false);
   }
 

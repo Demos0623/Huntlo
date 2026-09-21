@@ -157,6 +157,7 @@ class Game {
     this._tpArmed = false; // "tp" code: press T to teleport to the crosshair
     this.flick = false;    // "flick" code: snap aim to enemy head when firing
     this.selfbot = false;  // "selfbot" code: AI plays your character
+    this.muscle = false;   // "muscle" code: cosmetic power-build player model
     this._flashedT = 0;    // seconds remaining blinded (broadcast so others see it)
 
     let savedNick = '';
@@ -219,6 +220,12 @@ class Game {
     this._commands.bothard = setDiff('hard', 'BOTS: HARD');
     // "selfbot" — AI takes over and plays your character.
     this._commands.selfbot = () => { this.selfbot = !this.selfbot; return this.selfbot ? 'SELF-BOT ON' : 'SELF-BOT OFF'; };
+    // "muscle" — cosmetic bulked-up character model, shared with other players.
+    this._commands.muscle = () => {
+      this.muscle = !this.muscle;
+      this.playerModel.setMuscle(this.muscle);
+      return this.muscle ? 'MUSCLE ON' : 'MUSCLE OFF';
+    };
     // "boton" — spawn the enemy bots; "botoff" — remove them.
     this._commands.boton = () => {
       if (this.bots.list.length) return 'BOTS ALREADY ON';
@@ -745,6 +752,7 @@ class Game {
         moving: ms.grounded && ms.speed > 0.6, wid: this.weapons.current.def.id,
         hp: Math.round(this.health), dead: this._dead, team: this._team,
         flashed: this._flashedT > 0, stance: ms.crouching ? 'crouch' : 'stand',
+        muscle: this.muscle,
         grounded: ms.grounded, seq: ++this._netSeq,
         name: this.nickname || ('Player ' + (this.net.id || '')),
       });
