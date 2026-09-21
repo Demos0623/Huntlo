@@ -217,8 +217,8 @@ class Game {
     this._commands.botez = setDiff('easy', 'BOTS: EASY');
     this._commands.botmid = setDiff('normal', 'BOTS: NORMAL');
     this._commands.bothard = setDiff('hard', 'BOTS: HARD');
-    // "bot" — AI takes over and plays your character.
-    this._commands.bot = () => { this.selfbot = !this.selfbot; return this.selfbot ? 'SELF-BOT ON' : 'SELF-BOT OFF'; };
+    // "selfbot" — AI takes over and plays your character.
+    this._commands.selfbot = () => { this.selfbot = !this.selfbot; return this.selfbot ? 'SELF-BOT ON' : 'SELF-BOT OFF'; };
     // "boton" — spawn the enemy bots; "botoff" — remove them.
     this._commands.boton = () => {
       if (this.bots.list.length) return 'BOTS ALREADY ON';
