@@ -131,11 +131,12 @@ export class ViewModel {
   _updateRainbowAccents() {
     if (!this._rainbow) return;
     this._collectRainbowAccents();
-    const hue = (this._time * 0.42) % 1;
-    this._rainbowAccents.forEach((accent, index) => {
-      const h = (hue + index * 0.075) % 1;
-      accent.mat.color.setHSL(h, 0.92, 0.55);
-      if (accent.mat.emissive) accent.mat.emissive.setHSL(h, 0.9, 0.24);
+    // Use wall-clock time instead of a per-gun timer: every accent, even after
+    // a weapon swap, reads the same fast color at the same instant.
+    const hue = (performance.now() * 0.001) % 1;
+    this._rainbowAccents.forEach((accent) => {
+      accent.mat.color.setHSL(hue, 0.92, 0.55);
+      if (accent.mat.emissive) accent.mat.emissive.setHSL(hue, 0.9, 0.24);
     });
   }
 
@@ -265,8 +266,10 @@ export class ViewModel {
     const ctx = c.getContext('2d');
     const g = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
     g.addColorStop(0, 'rgba(255,255,255,1)');
-    g.addColorStop(0.4, 'rgba(255,225,150,0.85)');
-    g.addColorStop(1, 'rgba(255,200,90,0)');
+    // White source texture keeps the particle vertex colors accurate; the old
+    // warm-yellow texture would muddy blue and violet rainbow particles.
+    g.addColorStop(0.4, 'rgba(255,255,255,0.85)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, 32, 32);
     const tex = new THREE.CanvasTexture(c);
@@ -302,6 +305,7 @@ export class ViewModel {
     }
     let live = 0;
     const pos = this._pPositions, col = this._pColors;
+    const rainbowHue = this._rainbow ? (performance.now() * 0.001) % 1 : 0;
     for (let i = 0; i < this._pMax; i++) {
       const p = this._pData[i];
       let a = 0;
@@ -316,7 +320,7 @@ export class ViewModel {
       pos[i * 3] = p.px || 0; pos[i * 3 + 1] = p.py || 0; pos[i * 3 + 2] = p.pz || 0;
 
       if (this._rainbow) {
-        this._rainbowColorA.setHSL((this._time * 0.42 + i * 0.11) % 1, 0.95, 0.62);
+        this._rainbowColorA.setHSL((rainbowHue + i * 0.11) % 1, 0.95, 0.62);
         col[i * 3] = this._rainbowColorA.r * a;
         col[i * 3 + 1] = this._rainbowColorA.g * a;
         col[i * 3 + 2] = this._rainbowColorA.b * a;
@@ -363,6 +367,7 @@ export class ViewModel {
 
     const positions = new Float32Array(n * 2 * 3);
     const colors = new Float32Array(n * 2 * 3);
+    const rainbowHue = this._rainbow ? (performance.now() * 0.001) % 1 : 0;
     for (let i = 0; i < n; i++) {
       const s = this._trailPos[i];
       const a = Math.max(0, Math.min(1, s.life)) * 0.7;
@@ -372,8 +377,8 @@ export class ViewModel {
       if (this._rainbow) {
         // Offset each ribbon segment so the moving trail contains the whole
         // spectrum, rather than flashing one flat color at a time.
-        this._rainbowColorA.setHSL((this._time * 0.42 + i * 0.09) % 1, 0.96, 0.62);
-        this._rainbowColorB.setHSL((this._time * 0.42 + i * 0.09 + 0.055) % 1, 0.96, 0.46);
+        this._rainbowColorA.setHSL((rainbowHue + i * 0.09) % 1, 0.96, 0.62);
+        this._rainbowColorB.setHSL((rainbowHue + i * 0.09 + 0.055) % 1, 0.96, 0.46);
         colors.set([this._rainbowColorA.r * a, this._rainbowColorA.g * a, this._rainbowColorA.b * a], i * 6);
         colors.set([this._rainbowColorB.r * a, this._rainbowColorB.g * a, this._rainbowColorB.b * a], i * 6 + 3);
       } else {

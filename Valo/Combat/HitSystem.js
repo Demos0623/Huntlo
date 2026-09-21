@@ -110,7 +110,9 @@ export class HitSystem {
     const mid = from.clone().addScaledVector(dir, len * 0.5);
     const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
 
-    const hue = (performance.now() * 0.00042) % 1;
+    // Matches the view-model rainbow clock, so tracer cores and gun accents
+    // are synchronized and complete a full spectrum every second.
+    const hue = (performance.now() * 0.001) % 1;
     const coreColor = this.rainbow ? new THREE.Color().setHSL(hue, 0.96, 0.66) : 0xfff2c4;
     const haloColor = this.rainbow ? new THREE.Color().setHSL((hue + 0.07) % 1, 0.96, 0.52) : 0xffbb55;
     const core = new THREE.Mesh(
