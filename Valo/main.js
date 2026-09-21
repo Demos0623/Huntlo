@@ -74,7 +74,7 @@ class Game {
 
     // AI bots — OFF by default. "boton" spawns them, "botoff" removes them.
     const dp = this._spawns.defender.pos;
-    this._botSpawns = [[0, 0], [3, -2], [-3, 2], [1.5, 3.5]].map(
+    this._botSpawns = [[3, -2], [-3, 2], [1.5, 3.5]].map(
       ([ox, oz]) => new THREE.Vector3(dp.x + ox, 0, dp.z + oz));
     let botDiff = 'normal';
     try { const d = localStorage.getItem('valo_botdiff'); if (d === 'easy' || d === 'normal' || d === 'hard') botDiff = d; } catch (_) { /* ignore */ }
