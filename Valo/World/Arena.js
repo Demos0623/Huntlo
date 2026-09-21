@@ -300,9 +300,15 @@ function buildSunlineArena(scene) {
           const name = object.name;
           // Material zones follow the authored object names, so the imported
           // map gains the new look without changing its model or collision.
+          // Give every imported render surface a readable PBR material first.
+          // Some Higgsfield mesh names do not follow the original naming
+          // convention; leaving those untouched preserves their near-black
+          // export material and makes whole walls look broken. Specific
+          // surfaces below then replace this neutral plaster fallback.
+          object.material = SUNLINE_MATERIALS.plaster;
           // Each gets world-scaled UVs (the GLB's own UVs stretch one tile over
           // an entire wall), with a per-surface tile size in metres.
-          let tile = 0;
+          let tile = 2.6;
           if (/^(?:Arena_Foundation|Central_Open_Mid|North_Site_Platform|South_Site_Platform)/.test(name)) {
             object.material = SUNLINE_MATERIALS.floor; tile = 3.2;
           } else if (/Cover|_base/.test(name)) {
