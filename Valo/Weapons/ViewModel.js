@@ -356,7 +356,9 @@ export class ViewModel {
 
     const flourish = this._isMelee
       ? (this._meleeSpinning || this._drawSpinT > 0 || this._swingT > 0 || this._hitSpinT > 0)
-      : (this._id === 'marker' && this._inspectT > 0) || (this._rainbow && fired);
+      // Rainbow mode continuously emits a cosmetic gun ribbon as soon as the
+      // code is enabled; firing is no longer required to start or sustain it.
+      : (this._id === 'marker' && this._inspectT > 0) || this._rainbow;
 
     if (this._prevTip) this._tipVel = tip.clone().sub(this._prevTip).multiplyScalar(1 / Math.max(dt, 1e-4));
     else this._tipVel = new THREE.Vector3();
@@ -369,7 +371,17 @@ export class ViewModel {
       if (this._rainbow && fired && !this._isMelee && previousTip && previousBase) {
         this._trailPos.push({ tip: previousTip.clone(), base: previousBase.clone(), life: 0.6, duration: 0.18 });
       }
-      this._trailPos.push({ tip: tip.clone(), base: base.clone(), life: 1, duration: this._rainbow && fired && !this._isMelee ? 0.18 : 0.08 });
+      if (this._rainbow && !this._isMelee) {
+        // A tiny wave prevents a stationary first-person gun from producing a
+        // zero-area ribbon, so the trail remains visible even when standing.
+        const wave = new THREE.Vector3(
+          Math.sin(this._time * 17) * 0.012,
+          Math.cos(this._time * 21) * 0.012,
+          Math.sin(this._time * 13) * 0.007,
+        );
+        tip.add(wave); base.add(wave);
+      }
+      this._trailPos.push({ tip: tip.clone(), base: base.clone(), life: 1, duration: this._rainbow && !this._isMelee ? 0.18 : 0.08 });
       if (this._isMelee || (this._rainbow && fired)) {
         this._emitSparks(tip, this._tipVel, this._isMelee ? 3 : 10);
       }
