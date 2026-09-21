@@ -71,6 +71,8 @@ export class ViewModel {
     this._ads = 0;
     this._time = 0;
     this._swayVel = new THREE.Vector3();
+    this._rainbow = false;
+    this._rainbowAccents = [];
 
     this._off = new THREE.Vector3();
     this._q = new THREE.Quaternion();
@@ -84,6 +86,57 @@ export class ViewModel {
     if (this._inspectT <= 0 && this._equip <= 0.01) this._inspectT = this._inspectDur;
   }
 
+  setRainbow(on) {
+    this._rainbow = !!on;
+    if (this._rainbow) this._collectRainbowAccents();
+    else this._restoreRainbowAccents();
+  }
+
+  _collectRainbowAccents() {
+    if (!this._rainbow || this._rainbowAccents.length) return;
+    this.group.traverse((o) => {
+      if (!o.isMesh || !o.material) return;
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      const styled = mats.map((mat) => {
+        if (!mat || !mat.color) return mat;
+        const c = mat.color;
+        // Metallic warm/yellow pieces are the gun's gold accents. Clone first:
+        // imported gun models otherwise share their skin materials with the cache.
+        const isGold = c.r > 0.55 && c.g > 0.32 && c.g < 0.97 && c.b < 0.66 && (mat.metalness || 0) > 0.4;
+        if (!isGold) return mat;
+        const copy = mat.clone();
+        this._rainbowAccents.push({
+          mat: copy,
+          color: copy.color.clone(),
+          emissive: copy.emissive ? copy.emissive.clone() : null,
+          emissiveIntensity: copy.emissiveIntensity,
+        });
+        return copy;
+      });
+      o.material = Array.isArray(o.material) ? styled : styled[0];
+    });
+  }
+
+  _restoreRainbowAccents() {
+    for (const accent of this._rainbowAccents) {
+      accent.mat.color.copy(accent.color);
+      if (accent.emissive && accent.mat.emissive) accent.mat.emissive.copy(accent.emissive);
+      accent.mat.emissiveIntensity = accent.emissiveIntensity;
+    }
+    this._rainbowAccents.length = 0;
+  }
+
+  _updateRainbowAccents() {
+    if (!this._rainbow) return;
+    this._collectRainbowAccents();
+    const hue = (this._time * 0.12) % 1;
+    this._rainbowAccents.forEach((accent, index) => {
+      const h = (hue + index * 0.075) % 1;
+      accent.mat.color.setHSL(h, 0.92, 0.55);
+      if (accent.mat.emissive) accent.mat.emissive.setHSL(h, 0.9, 0.24);
+    });
+  }
+
   setWeapon(id) {
     if (id === this._id) return;
     this._id = id;
@@ -91,6 +144,10 @@ export class ViewModel {
 
     const model = (this.modelLoader && this.modelLoader.getModel(id)) || buildWeaponModel(id);
     this.group.add(model);
+    // A swap disposes the old view model, so collect accent copies again for
+    // the new gun while rainbow mode is active.
+    this._rainbowAccents.length = 0;
+    if (this._rainbow) this._collectRainbowAccents();
 
     this._mag = null;
     model.traverse((o) => { if (o.userData && o.userData.part === 'magazine') this._mag = o; });
@@ -141,6 +198,7 @@ export class ViewModel {
 
     this._lastSlot = manager.currentSlot;
     this.setWeapon(manager.current.def.id);
+    this._updateRainbowAccents();
     this._isMelee = !!manager.current.def.melee;
     let fired = false;
     if (manager.shotCount !== this._lastShot) {

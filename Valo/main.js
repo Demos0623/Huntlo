@@ -158,6 +158,7 @@ class Game {
     this.flick = false;    // "flick" code: snap aim to enemy head when firing
     this.selfbot = false;  // "selfbot" code: AI plays your character
     this.muscle = false;   // "muscle" code: cosmetic power-build player model
+    this.rainbow = false;  // "rainbow" code: cycle gold gun accents through color
     this._flashedT = 0;    // seconds remaining blinded (broadcast so others see it)
 
     let savedNick = '';
@@ -225,6 +226,12 @@ class Game {
       this.muscle = !this.muscle;
       this.playerModel.setMuscle(this.muscle);
       return this.muscle ? 'MUSCLE ON' : 'MUSCLE OFF';
+    };
+    // "rainbow" — cycle the current gun's gold accents through rainbow colors.
+    this._commands.rainbow = () => {
+      this.rainbow = !this.rainbow;
+      this.viewModel.setRainbow(this.rainbow);
+      return this.rainbow ? 'RAINBOW ON' : 'RAINBOW OFF';
     };
     // "boton" — spawn the enemy bots; "botoff" — remove them.
     this._commands.boton = () => {
