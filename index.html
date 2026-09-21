@@ -441,11 +441,11 @@
 
   <!-- Online multiplayer relay.
        Leave '' for local/LAN play (auto-connects to this host on :8080).
-       For internet play, deploy relay_server.py to a wss:// host and put its
-       URL here, e.g.  window.HUNTLO_RELAY_URL = 'wss://huntlo-relay.onrender.com';
+       For internet play, deploy cloudflare/src/worker.js to a wss:// host and
+       put its URL here. Cloudflare Workers uses the same host for HTTPS/WSS.
        You can also test any relay without editing this by adding
        ?relay=wss://your-relay to the page URL. -->
-  <script>window.HUNTLO_RELAY_URL = 'wss://huntlo-relay.onrender.com';</script>
+  <script>window.HUNTLO_RELAY_URL = 'wss://huntlo-relay.demoslin0623.workers.dev';</script>
 
   <script type="module" src="./Valo/main.js"></script>
 </body>
