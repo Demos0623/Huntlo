@@ -1,0 +1,13 @@
+# Render Blueprint for the Huntlo multiplayer relay.
+# In Render: New +  →  Blueprint  →  point it at this repo. Render reads this
+# file, creates the service, and gives you a public https/wss URL.
+#
+# The relay binds to the $PORT Render assigns and answers plain HTTP GETs with
+# 200 (so the health check passes) while upgrading real clients to WebSocket.
+services:
+  - type: web
+    name: huntlo-relay
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python3 relay_server.py

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Valo — Test Harness</title>
+  <style>
+    body { font-family: ui-monospace, Menlo, monospace; background: #0e1116; color: #dfe6ef; padding: 20px; }
+    h1 { font-size: 18px; letter-spacing: 2px; }
+    #sum { font-size: 15px; margin: 10px 0 16px; }
+    .row { padding: 3px 0; border-bottom: 1px solid #1c2230; }
+    .pass { color: #7fe0c8; } .fail { color: #ff6b6b; }
+    .detail { color: #6f7d90; margin-left: 10px; }
+  </style>
+  <script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <h1>VALO — HEADLESS TESTS</h1>
+  <div id="sum">running…</div>
+  <div id="out"></div>
+  <script type="module">
+    import { runTests, runArenaCollisionAudit } from './harness.js';
+    const r = runTests();
+    const audit = await runArenaCollisionAudit();
+    const sum = document.getElementById('sum');
+    sum.textContent = `${r.passed}/${r.total} general · ${audit.passed}/${audit.total} arena collision checks passed`;
+    sum.className = audit.passed === audit.total ? 'pass' : 'fail';
+    const out = document.getElementById('out');
+    out.innerHTML = r.results.map(x =>
+      `<div class="row"><span class="${x.pass ? 'pass' : 'fail'}">${x.pass ? 'PASS' : 'FAIL'}</span> ${x.name}<span class="detail">${x.detail}</span></div>`
+    ).join('') + `<div class="row"><span class="${audit.passed === audit.total ? 'pass' : 'fail'}">${audit.passed === audit.total ? 'PASS' : 'FAIL'}</span> imported arena wall sweep<span class="detail">${audit.passed}/${audit.total}; ${audit.blockers} blockers${audit.failures.length ? ' — ' + audit.failures.slice(0, 3).join('; ') : ''}</span></div>`;
+    window.__testResults = { ...r, arenaCollisionAudit: audit };
+  </script>
+</body>
+</html>
