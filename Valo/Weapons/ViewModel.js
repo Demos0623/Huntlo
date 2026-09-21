@@ -282,10 +282,10 @@ export class ViewModel {
     return tex;
   }
 
-  _emitSparks(origin, tipVel) {
+  _emitSparks(origin, tipVel, count = 3) {
     if (PERF) return;
     let spawned = 0;
-    for (let i = 0; i < this._pMax && spawned < 3; i++) {
+    for (let i = 0; i < this._pMax && spawned < count; i++) {
       const p = this._pData[i];
       if (p.life > 0) continue;
       p.max = 0.22 + Math.random() * 0.28;
@@ -367,13 +367,15 @@ export class ViewModel {
       // A single semi-auto shot needs two ribbon cross-sections; otherwise a
       // Sheriff shot would only have one point and no visible trail.
       if (this._rainbow && fired && !this._isMelee && previousTip && previousBase) {
-        this._trailPos.push({ tip: previousTip.clone(), base: previousBase.clone(), life: 0.6 });
+        this._trailPos.push({ tip: previousTip.clone(), base: previousBase.clone(), life: 0.6, duration: 0.18 });
       }
-      this._trailPos.push({ tip: tip.clone(), base: base.clone(), life: 1 });
-      if (this._isMelee || (this._rainbow && fired)) this._emitSparks(tip, this._tipVel);
+      this._trailPos.push({ tip: tip.clone(), base: base.clone(), life: 1, duration: this._rainbow && fired && !this._isMelee ? 0.18 : 0.08 });
+      if (this._isMelee || (this._rainbow && fired)) {
+        this._emitSparks(tip, this._tipVel, this._isMelee ? 3 : 10);
+      }
     }
 
-    for (const s of this._trailPos) s.life -= dt / 0.08;
+    for (const s of this._trailPos) s.life -= dt / (s.duration || 0.08);
     while (this._trailPos.length && this._trailPos[0].life <= 0) this._trailPos.shift();
     if (this._trailPos.length > this._trailMax) this._trailPos.splice(0, this._trailPos.length - this._trailMax);
 
