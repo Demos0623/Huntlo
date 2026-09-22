@@ -260,10 +260,12 @@
     .tc-btn[data-press="slotPrimary"]   { right: 6px;   bottom: 300px; }
     .tc-btn[data-press="slotSecondary"] { right: 58px;  bottom: 300px; }
     .tc-btn[data-press="slotMelee"]     { right: 110px; bottom: 300px; }
-    /* Customize: gear button + editor bar */
-    .tc-gear { position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
-      pointer-events: auto; width: 40px; height: 40px; border-radius: 50%; font-size: 20px;
-      background: rgba(20,26,34,0.55); color: #eaf0f7; border: 1px solid rgba(255,255,255,0.35); }
+    /* Customize button + editor bar */
+    .tc-customize { position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+      pointer-events: auto; min-height: 38px; padding: 0 14px; border-radius: 8px;
+      background: rgba(20,26,34,0.8); color: #eaf0f7; border: 1px solid rgba(255,255,255,0.35);
+      font: 800 11px/1 ui-monospace, Menlo, Consolas, monospace; letter-spacing: 1.1px;
+      white-space: nowrap; }
     #v-touch.tc-editing #tc-buttons .tc-btn { outline: 2px dashed var(--accent); outline-offset: 3px;
       transition: none; }
     #v-touch.tc-editing #tc-move, #v-touch.tc-editing #tc-look { background: rgba(255,255,255,0.03); }

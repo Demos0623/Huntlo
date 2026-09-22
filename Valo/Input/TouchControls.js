@@ -47,7 +47,7 @@ export class TouchControls {
       <div id="tc-mobile-badge">MOBILE CONTROLS</div>
       <div id="tc-move"><div id="tc-stick"></div></div>
       <div id="tc-look"></div>
-      <button id="tc-edit" class="tc-gear" aria-label="Customize controls">⚙</button>
+      <button id="tc-edit" class="tc-customize" type="button">⚙&nbsp; CUSTOMIZE CONTROLS</button>
       <div id="tc-buttons">
         <button class="tc-btn tc-w" data-press="slotMelee">3</button>
         <button class="tc-btn tc-w" data-press="slotSecondary">2</button>
