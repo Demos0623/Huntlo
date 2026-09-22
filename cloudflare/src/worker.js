@@ -52,22 +52,34 @@ export class HuntloRoom {
 
   cleanState(player, d) {
     const finite = (...v) => v.every(Number.isFinite);
-    if (!finite(d.x, d.y, d.z)) return null;
-    const yaw = Number.isFinite(d.yaw) ? d.yaw : 0;
-    const pitch = Number.isFinite(d.pitch) ? d.pitch : 0;
+    const previous = player.view;
+    const has = (key) => Object.prototype.hasOwnProperty.call(d, key);
+    const value = (key, fallback) => has(key) ? d[key] : (previous ? previous[key] : fallback);
+    const x = value('x', null), y = value('y', null), z = value('z', null);
+    if (!finite(x, y, z)) return null;
+    const yaw = Number.isFinite(value('yaw', 0)) ? value('yaw', 0) : 0;
+    const pitch = Number.isFinite(value('pitch', 0)) ? value('pitch', 0) : 0;
     const seq = Number.isInteger(d.seq) ? d.seq : player.seq + 1;
     // Keep an older state from overwriting a newer position after a delayed
     // client send. WebSockets preserve order normally; this is a safe guard
     // for reconnects and relay-edge timing.
     if (seq <= player.seq) return null;
     player.seq = seq;
-    player.view = { t:'state', id:player.id, x:d.x, y:d.y, z:d.z, yaw, pitch,
-      moving:!!d.moving, stance:d.stance === 'crouch' ? 'crouch' : 'stand', grounded:!!d.grounded,
-      seq:player.seq, wid:VALID_WEAPONS.has(d.wid) ? d.wid : 'vantage', hp:Number.isFinite(d.hp) ? d.hp : 150,
-      dead:!!d.dead, team:d.team === 'defender' ? 'defender' : 'attacker', flashed:!!d.flashed,
-      muscle:!!d.muscle,
-      name:String(d.name || `Player ${player.id}`).slice(0, 16) };
-    return player.view;
+    const view = { t:'state', id:player.id, x, y, z, yaw, pitch,
+      moving:!!value('moving', false), stance:value('stance', 'stand') === 'crouch' ? 'crouch' : 'stand', grounded:!!value('grounded', false),
+      seq:player.seq, wid:VALID_WEAPONS.has(value('wid', 'vantage')) ? value('wid', 'vantage') : 'vantage', hp:Number.isFinite(value('hp', 150)) ? value('hp', 150) : 150,
+      dead:!!value('dead', false), team:value('team', 'attacker') === 'defender' ? 'defender' : 'attacker', flashed:!!value('flashed', false),
+      muscle:!!value('muscle', false),
+      name:String(value('name', `Player ${player.id}`)).slice(0, 16) };
+    player.view = view;
+    // New observers receive the full view in their snapshot. Existing players
+    // only receive properties that changed, plus the sequence number.
+    if (!previous) return view;
+    const delta = { t: 'state', id: player.id, seq: player.seq };
+    for (const [key, val] of Object.entries(view)) {
+      if (key !== 't' && key !== 'id' && key !== 'seq' && val !== previous[key]) delta[key] = val;
+    }
+    return delta;
   }
 
   send(player, value) { try { player.socket.send(JSON.stringify(value)); } catch { this.leave(player.id); } }

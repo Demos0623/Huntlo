@@ -312,6 +312,8 @@ class Game {
     this._dead = false;
     this._netAccum = 0;
     this._netSeq = 0;
+    this._lastSentState = null;
+    this._lastStateKeyframeAt = 0;
     this._ping = null;
     this._pingAccum = 0;
     this._pingSeq = 0;
@@ -375,6 +377,10 @@ class Game {
       .on('up', () => {
         this._lastPongAt = 0;
         this._pingPending.clear();
+        // A new socket has no delta baseline at the relay, so its next update
+        // must be a complete state.
+        this._lastSentState = null;
+        this._lastStateKeyframeAt = 0;
       })
       .on('welcome', (m) => {
         // The relay may provide a suggested team, but local team selection is
@@ -826,15 +832,25 @@ class Game {
     if (this.net.connected && this._netAccum >= stateInterval) {
       this._netAccum = 0;
       const eye = this.movement.eyePosition, ms = this.movement.getAccuracyState();
-      this.net.send({
-        t: 'state', x: eye.x, y: eye.y, z: eye.z, yaw: this._bodyYaw(), pitch: this.camera.pitch,
+      const state = {
+        x: eye.x, y: eye.y, z: eye.z, yaw: this._bodyYaw(), pitch: this.camera.pitch,
         moving: ms.grounded && ms.speed > 0.6, wid: this.weapons.current.def.id,
         hp: Math.round(this.health), dead: this._dead, team: this._team,
         flashed: this._flashedT > 0, stance: ms.crouching ? 'crouch' : 'stand',
         muscle: this.muscle,
         grounded: ms.grounded, seq: ++this._netSeq,
         name: this.nickname || ('Player ' + (this.net.id || '')),
-      });
+      };
+      const now = performance.now();
+      const full = !this._lastSentState || now - this._lastStateKeyframeAt >= 1000;
+      const packet = { t: 'state', seq: state.seq };
+      for (const [key, value] of Object.entries(state)) {
+        if (key !== 'seq' && (full || this._lastSentState[key] !== value)) packet[key] = value;
+      }
+      if (this.net.send(packet)) {
+        this._lastSentState = state;
+        if (full) this._lastStateKeyframeAt = now;
+      }
     }
 
     this._pingAccum += frameTime;

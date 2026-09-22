@@ -119,6 +119,7 @@ class RemotePlayer {
     scene.add(this.group);
 
     this._buf = [];
+    this._state = {};
     this._interpDelay = 0.12;
     this._lastSeq = -1;
     this._pitch = 0;
@@ -213,23 +214,28 @@ class RemotePlayer {
       if (d.seq <= this._lastSeq) return;
       this._lastSeq = d.seq;
     }
+    // Relay state packets are deltas after the first full snapshot. Merge them
+    // before buffering so a yaw-only or health-only update never resets a
+    // remote player's last known position.
+    this._state = { ...this._state, ...d };
+    const state = this._state;
 
     this._buf.push({
       t: performance.now() / 1000,
-      x: d.x, y: (d.y ?? EYE) - EYE, z: d.z,
-      yaw: d.yaw ?? 0,
-      pitch: Math.max(-1.2, Math.min(1.2, d.pitch ?? 0)),
+      x: state.x, y: (state.y ?? EYE) - EYE, z: state.z,
+      yaw: state.yaw ?? 0,
+      pitch: Math.max(-1.2, Math.min(1.2, state.pitch ?? 0)),
     });
     if (this._buf.length > 40) this._buf.shift();
-    this._moving = !!d.moving;
-    this._crouching = d.stance === 'crouch';
-    this._flashed = !!d.flashed;
-    if (typeof d.hp === 'number') this.hp = d.hp;
-    if (d.wid) this.setWeapon(d.wid);
-    if (d.name) this.setName(d.name);
-    if (d.team) this.setTeam(d.team);
-    if (typeof d.muscle === 'boolean') this.setMuscle(d.muscle);
-    if (d.dead) this.setDead(true); else if (this.dead && d.dead === false) this.setDead(false);
+    this._moving = !!state.moving;
+    this._crouching = state.stance === 'crouch';
+    this._flashed = !!state.flashed;
+    if (typeof state.hp === 'number') this.hp = state.hp;
+    if (state.wid) this.setWeapon(state.wid);
+    if (state.name) this.setName(state.name);
+    if (state.team) this.setTeam(state.team);
+    if (typeof state.muscle === 'boolean') this.setMuscle(state.muscle);
+    if (state.dead) this.setDead(true); else if (this.dead && state.dead === false) this.setDead(false);
   }
 
   setDead(v) { this.dead = v; this.group.visible = !v && !this._smokeHidden; }
@@ -246,8 +252,12 @@ class RemotePlayer {
 
       while (buf.length > 2 && buf[1].t <= renderT) buf.shift();
       let a = buf[0], b = buf[1] || buf[0];
-      let f = (b.t > a.t) ? (renderT - a.t) / (b.t - a.t) : 1;
-      f = Math.max(0, Math.min(1, f));
+      const span = b.t - a.t;
+      const raw = span > 0 ? (renderT - a.t) / span : 1;
+      // When a state update is briefly late, extrapolate from the last two
+      // snapshots for up to 80 ms rather than freezing the remote player.
+      const maxF = span > 0 ? 1 + Math.min(0.08 / span, 2.4) : 1;
+      const f = Math.max(0, Math.min(maxF, raw));
       this.group.position.set(a.x + (b.x - a.x) * f, a.y + (b.y - a.y) * f, a.z + (b.z - a.z) * f);
       let dy = b.yaw - a.yaw;
       while (dy > Math.PI) dy -= Math.PI * 2;
