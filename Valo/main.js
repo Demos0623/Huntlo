@@ -317,9 +317,14 @@ class Game {
     this._pingSeq = 0;
     this._pingPending = new Map();
     this._pingSamples = [];
+    this._pingOutcomes = [];
     this._lastPongAt = 0;
     this._jitter = null;
     this._lastPingSample = null;
+    this._stateSeqByPlayer = new Map();
+    this._stateGaps = 0;
+    this._interpolationDelay = 0.12;
+    this._lastNetworkPanelAt = 0;
     this._fps = 0;
     this._scores = new Map();
     this._lastAttacker = null;
@@ -367,6 +372,10 @@ class Game {
       wsUrl = `${secure ? 'wss' : 'ws'}://${location.hostname || 'localhost'}${secure ? '' : ':8080'}`;
     }
     this.net = new Net(wsUrl)
+      .on('up', () => {
+        this._lastPongAt = 0;
+        this._pingPending.clear();
+      })
       .on('welcome', (m) => {
         // The relay may provide a suggested team, but local team selection is
         // never locked by the network host.
@@ -395,8 +404,14 @@ class Game {
         this.hud.setCredits(this._displayCredits());
         this.hud.setShield(this.shield);
       })
-      .on('leave', (m) => { this.remotePlayers.remove(m.id); this._scores.delete(m.id); })
-      .on('state', (m) => { if (m.id !== this.net.id) { this.remotePlayers.setState(m.id, m); this._score(m.id, m.name); } })
+      .on('leave', (m) => { this.remotePlayers.remove(m.id); this._scores.delete(m.id); this._stateSeqByPlayer.delete(m.id); })
+      .on('state', (m) => {
+        if (m.id !== this.net.id) {
+          this._recordRemoteState(m);
+          this.remotePlayers.setState(m.id, m);
+          this._score(m.id, m.name);
+        }
+      })
       .on('hit', (m) => {
         if (m.target === this.net.id) this._takeDamage(m.dmg, m.head, m.id);
       })
@@ -447,8 +462,12 @@ class Game {
       .on('pong', (m) => { this._recordPong(m); })
       .on('down', () => {
         this._ping = null;
+        this._jitter = null;
         this._pingPending.clear();
         this._pingSamples.length = 0;
+        this._stateSeqByPlayer.clear();
+        this._interpolationDelay = 0.12;
+        this.remotePlayers.setInterpolationDelay(this._interpolationDelay);
         for (const id of [...this.remotePlayers.players.keys()]) this.remotePlayers.remove(id);
       });
 
@@ -681,12 +700,13 @@ class Game {
 
   _recordPong(m) {
     const sent = this._pingPending.get(m.seq);
-    if (!Number.isFinite(sent)) return;
+    if (!sent || !Number.isFinite(sent.at)) return;
     this._pingPending.delete(m.seq);
-    const sample = performance.now() - sent;
+    const sample = performance.now() - sent.at;
     // Ignore impossible/stale replies so a dropped relay shows -- instead of
     // holding a misleading old latency value.
     if (sample < 0 || sample > 4000) return;
+    this._recordPingOutcome(true);
     this._pingSamples.push(sample);
     if (this._pingSamples.length > 5) this._pingSamples.shift();
     const sorted = [...this._pingSamples].sort((a, b) => a - b);
@@ -698,8 +718,48 @@ class Game {
     this._lastPongAt = performance.now();
     // State is sent at 30 Hz, so a stable connection only needs a tiny buffer.
     // Jitter expands that buffer rather than making every player feel delayed.
-    this.remotePlayers.setInterpolationDelay(Math.min(0.16, 0.067 + this._jitter / 500));
+    const loss = this._packetLoss() || 0;
+    this._interpolationDelay = Math.min(0.20, 0.065 + this._jitter / 500 + loss / 400);
+    this.remotePlayers.setInterpolationDelay(this._interpolationDelay);
     this.hud.setNetStats(this._fps, this._ping, this._jitter);
+  }
+
+  _recordPingOutcome(ok) {
+    this._pingOutcomes.push(ok ? 0 : 1);
+    if (this._pingOutcomes.length > 20) this._pingOutcomes.shift();
+  }
+
+  _packetLoss() {
+    // Wait for a few probes before presenting a percentage as meaningful.
+    if (this._pingOutcomes.length < 4) return null;
+    return this._pingOutcomes.reduce((sum, lost) => sum + lost, 0) * 100 / this._pingOutcomes.length;
+  }
+
+  _recordRemoteState(state) {
+    if (!Number.isInteger(state.seq)) return;
+    const last = this._stateSeqByPlayer.get(state.id);
+    if (Number.isInteger(last) && state.seq > last + 1) this._stateGaps += state.seq - last - 1;
+    if (!Number.isInteger(last) || state.seq > last) this._stateSeqByPlayer.set(state.id, state.seq);
+  }
+
+  _networkPanelTick() {
+    const now = performance.now();
+    if (now - this._lastNetworkPanelAt < 250) return;
+    this._lastNetworkPanelAt = now;
+    const net = this.net?.stats() || {};
+    this.hud.setNetworkDetails({
+      connected: !!net.connected,
+      reconnecting: !!net.reconnecting,
+      ping: this._ping,
+      jitter: this._jitter,
+      loss: this._packetLoss(),
+      stateGaps: this._stateGaps,
+      txRate: net.txRate || 0,
+      rxRate: net.rxRate || 0,
+      buffered: net.buffered || 0,
+      reconnects: net.reconnects || 0,
+      interpolation: this._interpolationDelay,
+    });
   }
 
   _setShadows(on) {
@@ -759,7 +819,11 @@ class Game {
     if (this._flashedT > 0) this._flashedT = Math.max(0, this._flashedT - frameTime);
 
     this._netAccum += frameTime;
-    if (this.net.connected && this._netAccum >= 1 / 30) {
+    // Send enough states for responsive movement, then step down slightly on
+    // unstable links to reduce queueing and let interpolation absorb jitter.
+    const loss = this._packetLoss() || 0;
+    const stateInterval = (loss >= 5 || (this._jitter || 0) > 35) ? 1 / 20 : 1 / 30;
+    if (this.net.connected && this._netAccum >= stateInterval) {
       this._netAccum = 0;
       const eye = this.movement.eyePosition, ms = this.movement.getAccuracyState();
       this.net.send({
@@ -777,18 +841,23 @@ class Game {
     if (this.net.connected && this._pingAccum >= 0.5) {
       this._pingAccum = 0;
       const seq = ++this._pingSeq;
-      this._pingPending.set(seq, performance.now());
-      this.net.send({ t: 'ping', seq });
+      const at = performance.now();
+      if (this.net.send({ t: 'ping', seq })) this._pingPending.set(seq, { at });
     }
     const nowPing = performance.now();
     for (const [seq, sent] of this._pingPending) {
-      if (nowPing - sent > 4000) this._pingPending.delete(seq);
+      if (nowPing - sent.at > 4000) {
+        this._pingPending.delete(seq);
+        this._recordPingOutcome(false);
+      }
     }
     if (this._lastPongAt && nowPing - this._lastPongAt > 4000) {
       this._ping = null;
       this._jitter = null;
-      this.remotePlayers.setInterpolationDelay(0.12);
+      this._interpolationDelay = 0.12;
+      this.remotePlayers.setInterpolationDelay(this._interpolationDelay);
     }
+    this._networkPanelTick();
     this.remotePlayers.update(frameTime);
     this._updateSmokeEnemyVisibility();
 

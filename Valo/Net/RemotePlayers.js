@@ -286,7 +286,7 @@ export class RemotePlayers {
   }
 
   setInterpolationDelay(seconds) {
-    this._interpDelay = Math.max(0.06, Math.min(0.16, seconds));
+    this._interpDelay = Math.max(0.06, Math.min(0.20, seconds));
     for (const p of this.players.values()) p._interpDelay = this._interpDelay;
   }
 

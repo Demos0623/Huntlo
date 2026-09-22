@@ -14,6 +14,20 @@ export class HUD {
         <div class="v-hm v-hm-l"></div><div class="v-hm v-hm-r"></div>
       </div>
       <div id="v-netstats">-- FPS · -- ms</div>
+      <button id="v-network-toggle" type="button" aria-expanded="false">NETWORK</button>
+      <section id="v-network-panel" hidden aria-label="Network statistics">
+        <div class="v-network-title"><span>NETWORK</span><span id="v-network-state">CONNECTING</span></div>
+        <div class="v-network-grid">
+          <span>PING</span><b id="v-network-ping">--</b>
+          <span>JITTER</span><b id="v-network-jitter">--</b>
+          <span>PACKET LOSS</span><b id="v-network-loss">--</b>
+          <span>STATE GAPS</span><b id="v-network-gaps">0</b>
+          <span>SMOOTHING</span><b id="v-network-smoothing">--</b>
+          <span>UPDATES</span><b id="v-network-rate">--</b>
+          <span>BUFFER</span><b id="v-network-buffer">0 B</b>
+          <span>RECONNECTS</span><b id="v-network-reconnects">0</b>
+        </div>
+      </section>
       <div id="v-scoreboard" hidden>
         <div class="sb-title">SCOREBOARD</div>
         <div class="sb-head"><span>PLAYER</span><span>K</span><span>D</span></div>
@@ -90,6 +104,13 @@ export class HUD {
     this._toastTimer = 0;
     this._bannerTimer = 0;
     this._setGap(H.crosshairBaseGap);
+    const networkButton = this.$('#v-network-toggle');
+    networkButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const panel = this.$('#v-network-panel');
+      panel.hidden = !panel.hidden;
+      networkButton.setAttribute('aria-expanded', String(!panel.hidden));
+    });
   }
 
   setHealth(hp) {
@@ -130,6 +151,22 @@ export class HUD {
     el.textContent = `${fps} FPS · ${net}`;
     el.classList.toggle('v-net-bad', ping != null && (ping > 120 || jitter > 35));
     el.classList.toggle('v-net-warn', ping != null && !el.classList.contains('v-net-bad') && (ping > 60 || jitter > 15));
+  }
+
+  setNetworkDetails({ connected, reconnecting, ping, jitter, loss, stateGaps, txRate, rxRate, buffered, reconnects, interpolation }) {
+    const set = (id, text) => { this.$(id).textContent = text; };
+    const state = reconnecting ? 'RECONNECTING' : connected ? 'ONLINE' : 'OFFLINE';
+    const stateEl = this.$('#v-network-state');
+    stateEl.textContent = state;
+    stateEl.className = `v-network-${state.toLowerCase()}`;
+    set('#v-network-ping', ping == null ? '--' : `${Math.round(ping)} ms`);
+    set('#v-network-jitter', jitter == null ? '--' : `±${Math.round(jitter)} ms`);
+    set('#v-network-loss', loss == null ? '--' : `${loss.toFixed(1)}%`);
+    set('#v-network-gaps', String(stateGaps || 0));
+    set('#v-network-smoothing', interpolation == null ? '--' : `${Math.round(interpolation * 1000)} ms`);
+    set('#v-network-rate', `${txRate.toFixed(0)}↑ / ${rxRate.toFixed(0)}↓ pkt/s`);
+    set('#v-network-buffer', `${Math.max(0, buffered || 0).toLocaleString('en-US')} B`);
+    set('#v-network-reconnects', String(reconnects || 0));
   }
 
   setShield(shield) {

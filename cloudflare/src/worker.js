@@ -55,7 +55,12 @@ export class HuntloRoom {
     if (!finite(d.x, d.y, d.z)) return null;
     const yaw = Number.isFinite(d.yaw) ? d.yaw : 0;
     const pitch = Number.isFinite(d.pitch) ? d.pitch : 0;
-    player.seq = Number.isInteger(d.seq) ? d.seq : player.seq + 1;
+    const seq = Number.isInteger(d.seq) ? d.seq : player.seq + 1;
+    // Keep an older state from overwriting a newer position after a delayed
+    // client send. WebSockets preserve order normally; this is a safe guard
+    // for reconnects and relay-edge timing.
+    if (seq <= player.seq) return null;
+    player.seq = seq;
     player.view = { t:'state', id:player.id, x:d.x, y:d.y, z:d.z, yaw, pitch,
       moving:!!d.moving, stance:d.stance === 'crouch' ? 'crouch' : 'stand', grounded:!!d.grounded,
       seq:player.seq, wid:VALID_WEAPONS.has(d.wid) ? d.wid : 'vantage', hp:Number.isFinite(d.hp) ? d.hp : 150,
