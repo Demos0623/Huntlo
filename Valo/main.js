@@ -301,6 +301,7 @@ class Game {
       e.preventDefault();
       const on = !this._allCheatsOn();
       this._setAllCheats(on);
+      if (showCheatsInList && codeListEl && !codeListEl.hidden) paintCodeList();
       const m = document.getElementById('v-cmd-msg');
       if (m) { m.textContent = on ? 'ALL CHEATS ON' : 'ALL CHEATS OFF'; m.className = on ? 'ok' : ''; }
     });
@@ -366,7 +367,10 @@ class Game {
           const option = document.createElement('button');
           option.type = 'button'; option.className = 'v-code-option'; option.dataset.code = code;
           option.textContent = codeLabels[code] || code.toUpperCase();
+          const active = showCheatsInList && !!cheats[code]?.get();
+          option.classList.toggle('v-code-active', active);
           option.classList.toggle('v-code-selected', selectedListedCodes.has(code));
+          option.setAttribute('aria-pressed', String(active));
           option.addEventListener('click', () => {
             if (selectedListedCodes.has(code)) selectedListedCodes.delete(code);
             else selectedListedCodes.add(code);

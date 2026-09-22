@@ -413,6 +413,10 @@
     .v-code-option { min-height: 34px; padding: 7px; border: 1px solid #344050; border-radius: 7px; background: rgba(31,40,53,0.65);
       color: #cdd8e7; font: 700 10px/1.2 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 0.6px; cursor: pointer; }
     .v-code-option:hover, .v-code-option.v-code-selected { border-color: #f2d962; color: #fff2ac; background: rgba(184,137,38,0.23); }
+    .v-code-option.v-code-active { border-color: #6df3cb; color: #d4fff1; background: rgba(42,185,144,0.23);
+      box-shadow: 0 0 13px rgba(61,238,191,0.28), inset 0 0 12px rgba(61,238,191,0.1); }
+    .v-code-option.v-code-active.v-code-selected { border-color: #fff0a1; color: #fff8d3;
+      background: linear-gradient(135deg, rgba(42,185,144,0.32), rgba(184,137,38,0.33)); }
     .v-code-list-actions { display: flex; gap: 8px; }
     .v-code-list-actions button { flex: 1; min-height: 34px; border-radius: 7px; border: 1px solid #394658; background: #1c2532;
       color: #dce5f0; font: 800 10px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 1.2px; cursor: pointer; }
@@ -508,6 +512,6 @@
        ?relay=wss://your-relay to the page URL. -->
   <script>window.HUNTLO_RELAY_URL = 'wss://huntlo-relay.demoslin0623.workers.dev';</script>
 
-  <script type="module" src="./Valo/main.js?v=mg-body-damage"></script>
+  <script type="module" src="./Valo/main.js?v=cheat-status"></script>
 </body>
 </html>
