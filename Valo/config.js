@@ -7,7 +7,9 @@ export const Movement = {
 
   acceleration: 90,
   deceleration: 110,
-  friction: 11,
+  // Faster ground deceleration means movement inaccuracy clears sooner when
+  // the player releases their movement keys.
+  friction: 18,
   stopSpeed: 1.6,
 
   airAcceleration: 16,
@@ -24,7 +26,7 @@ export const Movement = {
   crouchLerp: 12,
 
   turnPenaltyGain: 1.0,
-  turnPenaltyDecay: 6.0,
+  turnPenaltyDecay: 12.0,
 };
 
 export const Camera = {

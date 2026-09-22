@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Movement as M } from '../config.js';
+import { Movement as M } from '../config.js?v=faster-movement-reset';
 
 export const Stance = { STAND: 'stand', CROUCH: 'crouch' };
 
