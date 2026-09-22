@@ -309,7 +309,7 @@ class Game {
       if (!codeOptionsEl) return;
       codeOptionsEl.replaceChildren();
       const cheats = this._cheatDefs();
-      for (const code of Object.keys(this._commands).filter((name) => !cheats[name] && name !== 'list')) {
+      for (const code of Object.keys(this._commands).filter((name) => !cheats[name] && name !== 'list' && name !== 'selfbot')) {
         const option = document.createElement('button');
         option.type = 'button'; option.className = 'v-code-option'; option.dataset.code = code;
         option.textContent = codeLabels[code] || code.toUpperCase();
