@@ -40,7 +40,7 @@ export class HUD {
           <div><span>HEADSHOT RATE</span><b id="v-training-hs">0%</b></div>
           <div class="v-training-track"><i id="v-training-hs-bar"></i></div>
         </div>
-        <button id="v-training-reset" type="button">RESET STATS</button>
+        <button id="v-training-reset" type="button">RESET STATS · −</button>
       </section>
       <div id="v-scoreboard" hidden>
         <div class="sb-title">SCOREBOARD</div>
@@ -124,13 +124,21 @@ export class HUD {
       this.toggleNetworkPanel();
     });
     window.addEventListener('keydown', (e) => {
+      if (e.repeat) return;
+      const active = document.activeElement;
+      if (active && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) return;
+      // The unshifted Minus key is reserved for clearing the range result
+      // panel. Shift+- remains available for the network-panel shortcut.
+      if (e.key === '-' && !this.$('#v-training').hidden) {
+        e.preventDefault();
+        this._trainingReset?.();
+        return;
+      }
       // Support both the typed character and the physical Shift+- key, which
       // browsers report differently on some keyboard layouts. N is an
       // unbound in-game fallback for layouts where the underscore is awkward.
       const networkShortcut = e.key === '_' || (e.code === 'Minus' && e.shiftKey) || e.code === 'KeyN';
-      if (e.repeat || !networkShortcut) return;
-      const active = document.activeElement;
-      if (active && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) return;
+      if (!networkShortcut) return;
       e.preventDefault();
       this.toggleNetworkPanel();
     });

@@ -11,7 +11,7 @@ import { HitSystem } from './Combat/HitSystem.js';
 import { Target } from './Combat/Target.js';
 import { Bots } from './Combat/Bot.js?v=range-static-dps';
 import { AbilitySystem } from './Abilities/AbilitySystem.js';
-import { HUD } from './UI/HUD.js?v=range-static-dps';
+import { HUD } from './UI/HUD.js?v=training-reset-key';
 import { BuyMenu } from './UI/BuyMenu.js';
 import { Weapons, Armor } from './Weapons/WeaponData.js';
 import { Minimap } from './UI/Minimap.js?v=training-range';
