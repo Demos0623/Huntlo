@@ -58,6 +58,10 @@ export class TouchControls {
         <button class="tc-btn" data-press="jump">JUMP</button>
         <button class="tc-btn tc-aim" data-hold="altAction">AIM</button>
         <button class="tc-btn tc-fire" data-hold="fire">FIRE</button>
+        <button class="tc-btn tc-ability" data-press="abilityQ" aria-label="Q ability">Q</button>
+        <button class="tc-btn tc-ability" data-press="abilityE" aria-label="Curveball flash ability">E&nbsp; FLASH</button>
+        <button class="tc-btn tc-ability" data-press="abilityC" aria-label="Smoke ability">C&nbsp; SMOKE</button>
+        <button class="tc-btn tc-ability" data-press="abilityX" aria-label="X ability">X</button>
       </div>
       <div id="tc-editbar" hidden>
         <span class="tc-edit-title">CUSTOMIZE CONTROLS</span>

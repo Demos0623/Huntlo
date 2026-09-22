@@ -260,6 +260,12 @@
     .tc-btn[data-press="slotPrimary"]   { right: 6px;   bottom: 300px; }
     .tc-btn[data-press="slotSecondary"] { right: 58px;  bottom: 300px; }
     .tc-btn[data-press="slotMelee"]     { right: 110px; bottom: 300px; }
+    .tc-ability { width: 58px; height: 58px; border-radius: 12px; color: #b9f7df;
+      border-color: rgba(91,209,166,0.68); background: rgba(24,83,70,0.58); font-size: 11px; }
+    .tc-btn[data-press="abilityQ"] { right: 210px; bottom: 20px; }
+    .tc-btn[data-press="abilityE"] { right: 210px; bottom: 86px; }
+    .tc-btn[data-press="abilityC"] { right: 210px; bottom: 152px; }
+    .tc-btn[data-press="abilityX"] { right: 210px; bottom: 218px; }
     /* Customize button + editor bar */
     .tc-customize { position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
       pointer-events: auto; min-height: 38px; padding: 0 14px; border-radius: 8px;
@@ -477,6 +483,6 @@
        ?relay=wss://your-relay to the page URL. -->
   <script>window.HUNTLO_RELAY_URL = 'wss://huntlo-relay.demoslin0623.workers.dev';</script>
 
-  <script type="module" src="./Valo/main.js?v=per-control-size-v2"></script>
+  <script type="module" src="./Valo/main.js?v=mobile-abilities"></script>
 </body>
 </html>
