@@ -231,16 +231,16 @@
     @keyframes bm-deny { 0%,100%{ transform: translateX(0);} 25%{ transform: translateX(-4px);} 75%{ transform: translateX(4px);} }
 
     /* On-screen touch controls (phones/tablets) */
-    #v-touch { position: fixed; inset: 0; z-index: 12; }
+    #v-touch { position: fixed; inset: 0; z-index: 12; --tc-scale: 1; }
     #tc-mobile-badge { position: absolute; top: 14px; left: 14px; padding: 6px 9px;
       border: 1px solid rgba(143,227,200,0.42); border-radius: 6px; background: rgba(8,12,18,0.6);
       color: #8fe3c8; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10px;
       font-weight: 800; letter-spacing: 1.2px; pointer-events: none; }
     #tc-move { position: absolute; left: 0; bottom: 0; width: 45%; height: 55%; touch-action: none;
       pointer-events: auto; }
-    #tc-stick { position: absolute; left: 90px; bottom: 90px; width: 64px; height: 64px; margin: -32px;
+    #tc-stick { position: absolute; left: 90px; bottom: 90px; width: calc(64px * var(--tc-scale)); height: calc(64px * var(--tc-scale)); margin: calc(-32px * var(--tc-scale));
       border-radius: 50%; background: rgba(255,255,255,0.25); border: 2px solid rgba(255,255,255,0.5);
-      box-shadow: 0 0 0 46px rgba(255,255,255,0.06); }
+      box-shadow: 0 0 0 calc(46px * var(--tc-scale)) rgba(255,255,255,0.06); transform: scale(1); }
     #tc-look { position: absolute; right: 0; top: 0; width: 55%; height: 100%; touch-action: none;
       pointer-events: auto; }
     #tc-buttons { position: absolute; right: 16px; bottom: 16px; width: 300px; height: 300px;
@@ -248,7 +248,7 @@
     .tc-btn { position: absolute; pointer-events: auto; touch-action: none; -webkit-user-select: none;
       user-select: none; border: 2px solid rgba(255,255,255,0.4); border-radius: 50%;
       background: rgba(20,26,34,0.5); color: #eaf0f7; font-family: inherit; font-weight: 700;
-      font-size: 13px; letter-spacing: 1px; width: 74px; height: 74px; }
+      font-size: 13px; letter-spacing: 1px; width: 74px; height: 74px; transform: scale(var(--tc-scale)); transform-origin: bottom right; }
     .tc-btn.tc-active { background: rgba(255,212,121,0.5); }
     .tc-fire { right: 4px; bottom: 88px; width: 104px; height: 104px; font-size: 16px;
       background: rgba(224,51,58,0.5); border-color: rgba(255,120,120,0.7); }
@@ -266,7 +266,7 @@
       background: rgba(20,26,34,0.8); color: #eaf0f7; border: 1px solid rgba(255,255,255,0.35);
       font: 800 11px/1 ui-monospace, Menlo, Consolas, monospace; letter-spacing: 1.1px;
       white-space: nowrap; }
-    #v-touch.tc-editing #tc-buttons .tc-btn { outline: 2px dashed var(--accent); outline-offset: 3px;
+    #v-touch.tc-editing #tc-buttons .tc-btn, #v-touch.tc-editing #tc-stick { outline: 2px dashed var(--accent); outline-offset: 3px;
       transition: none; }
     #v-touch.tc-editing #tc-move, #v-touch.tc-editing #tc-look { background: rgba(255,255,255,0.03); }
     #tc-editbar { position: absolute; top: 0; left: 0; right: 0; z-index: 2; display: flex;
@@ -476,6 +476,6 @@
        ?relay=wss://your-relay to the page URL. -->
   <script>window.HUNTLO_RELAY_URL = 'wss://huntlo-relay.demoslin0623.workers.dev';</script>
 
-  <script type="module" src="./Valo/main.js?v=2ddef14"></script>
+  <script type="module" src="./Valo/main.js?v=joystick-size"></script>
 </body>
 </html>

@@ -1,5 +1,6 @@
 const LAYOUT_KEY = 'valo_touch_layout';
 const SENS_KEY = 'valo_touch_sens';
+const SIZE_KEY = 'valo_touch_size';
 
 export class TouchControls {
   static isTouchDevice() {
@@ -10,6 +11,7 @@ export class TouchControls {
     this.engaged = false;
     this.editMode = false;
     this.lookFactor = this._loadSens();
+    this.controlScale = this._loadSize();
     this._move = { f: false, b: false, l: false, r: false };
     this._held = new Set();
     this._pressed = new Set();
@@ -19,6 +21,7 @@ export class TouchControls {
     this._bindButtons();
     this._bindEditor();
     this._applyLayout(this._loadLayout());
+    this._applyControlSize();
   }
 
   isDown(action) {
@@ -60,9 +63,12 @@ export class TouchControls {
       </div>
       <div id="tc-editbar" hidden>
         <span class="tc-edit-title">CUSTOMIZE CONTROLS</span>
-        <span class="tc-edit-hint">Drag buttons to move them</span>
+        <span class="tc-edit-hint">Drag buttons or joystick to move them</span>
         <label class="tc-edit-sens">Look&nbsp;sens
           <input id="tc-sens" type="range" min="4" max="34" step="1" />
+        </label>
+        <label class="tc-edit-sens">Control&nbsp;size
+          <input id="tc-size" type="range" min="70" max="140" step="5" />
         </label>
         <button id="tc-reset" class="tc-edit-b">RESET</button>
         <button id="tc-done" class="tc-edit-b tc-edit-done">DONE</button>
@@ -103,9 +109,10 @@ export class TouchControls {
     const R = 55;
     let baseX = 0, baseY = 0, moveId = null;
     const setStick = (dx, dy) => {
-      const len = Math.hypot(dx, dy) || 1, cl = Math.min(len, R);
+      const radius = R * this.controlScale;
+      const len = Math.hypot(dx, dy) || 1, cl = Math.min(len, radius);
       stick.style.transform = `translate(${(dx / len) * cl}px, ${(dy / len) * cl}px)`;
-      const fx = dx / R, fy = dy / R, dead = 0.35;
+      const fx = dx / radius, fy = dy / radius, dead = 0.35;
       this._move.r = fx > dead; this._move.l = fx < -dead;
       this._move.b = fy > dead; this._move.f = fy < -dead;
     };
@@ -131,6 +138,13 @@ export class TouchControls {
     const sens = this.$('#tc-sens');
     sens.value = String(this.lookFactor);
     sens.addEventListener('input', () => { this.lookFactor = +sens.value; this._saveSens(); });
+    const size = this.$('#tc-size');
+    size.value = String(Math.round(this.controlScale * 100));
+    size.addEventListener('input', () => {
+      this.controlScale = (+size.value || 100) / 100;
+      this._applyControlSize();
+      this._saveSize();
+    });
 
     let drag = null;
     const onDown = (e) => {
@@ -142,6 +156,14 @@ export class TouchControls {
     const onMove = (e) => {
       if (!drag) return;
       e.preventDefault();
+      if (drag.id === 'tc-stick') {
+        const zone = this.$('#tc-move').getBoundingClientRect();
+        const x = Math.max(0, Math.min(zone.width, e.clientX - zone.left));
+        const bottom = Math.max(0, Math.min(zone.height, zone.bottom - e.clientY));
+        drag.style.right = 'auto'; drag.style.top = 'auto';
+        drag.style.left = x + 'px'; drag.style.bottom = bottom + 'px';
+        return;
+      }
       const w = drag.offsetWidth, h = drag.offsetHeight;
       let right = window.innerWidth - e.clientX - w / 2;
       let bottom = window.innerHeight - e.clientY - h / 2;
@@ -151,7 +173,7 @@ export class TouchControls {
       drag.style.right = right + 'px'; drag.style.bottom = bottom + 'px';
     };
     const onUp = () => { if (drag) { drag = null; this._saveLayout(); } };
-    for (const b of this.buttons) b.addEventListener('pointerdown', onDown);
+    for (const b of [...this.buttons, this.$('#tc-stick')]) b.addEventListener('pointerdown', onDown);
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
   }
@@ -165,6 +187,12 @@ export class TouchControls {
       const p = layout[this._actionOf(b)];
       if (p) { b.style.left = 'auto'; b.style.top = 'auto'; b.style.right = p.right + 'px'; b.style.bottom = p.bottom + 'px'; }
     }
+    const joystick = layout.joystick;
+    if (joystick) {
+      const stick = this.$('#tc-stick');
+      stick.style.right = 'auto'; stick.style.top = 'auto';
+      stick.style.left = joystick.left + 'px'; stick.style.bottom = joystick.bottom + 'px';
+    }
   }
 
   _saveLayout() {
@@ -176,15 +204,31 @@ export class TouchControls {
         bottom: Math.round(window.innerHeight - r.bottom),
       };
     }
+    const stick = this.$('#tc-stick');
+    const zone = this.$('#tc-move').getBoundingClientRect();
+    const r = stick.getBoundingClientRect();
+    layout.joystick = {
+      left: Math.round(r.left + r.width / 2 - zone.left),
+      bottom: Math.round(zone.bottom - (r.top + r.height / 2)),
+    };
     try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout)); } catch (_) {  }
   }
 
   _resetLayout() {
     try { localStorage.removeItem(LAYOUT_KEY); } catch (_) {  }
     for (const b of this.buttons) { b.style.right = ''; b.style.bottom = ''; b.style.left = ''; b.style.top = ''; }
+    const stick = this.$('#tc-stick');
+    stick.style.right = ''; stick.style.bottom = ''; stick.style.left = ''; stick.style.top = '';
+    this.controlScale = 1;
+    this.$('#tc-size').value = '100';
+    this._applyControlSize();
+    try { localStorage.removeItem(SIZE_KEY); } catch (_) {  }
   }
 
   _loadLayout() { try { return JSON.parse(localStorage.getItem(LAYOUT_KEY) || 'null'); } catch (_) { return null; } }
   _loadSens() { try { const v = +localStorage.getItem(SENS_KEY); return v >= 4 && v <= 40 ? v : 13; } catch (_) { return 13; } }
   _saveSens() { try { localStorage.setItem(SENS_KEY, String(this.lookFactor)); } catch (_) {  } }
+  _loadSize() { try { const v = +localStorage.getItem(SIZE_KEY); return v >= 0.7 && v <= 1.4 ? v : 1; } catch (_) { return 1; } }
+  _saveSize() { try { localStorage.setItem(SIZE_KEY, String(this.controlScale)); } catch (_) {  } }
+  _applyControlSize() { this.root.style.setProperty('--tc-scale', String(this.controlScale)); }
 }
