@@ -6,6 +6,30 @@ const PERF = isPerfMode();
 
 const BASE = new THREE.Vector3(0.16, -0.15, -0.34);
 
+// Each firearm gets its own reload silhouette. The values drive both the
+// visible magazine and the whole first-person weapon so even imported models
+// without a named magazine part retain a distinctive reload.
+const RELOAD_STYLES = {
+  classic:  { drop: 0.18, side: -0.04, dip: 0.08, yaw: -0.42, roll: 0.28, magRoll: 0.65 },
+  shorty:   { drop: 0.08, side: 0.08, dip: 0.15, yaw: 0.78, roll: -0.75, kick: 0.11 },
+  frenzy:   { drop: 0.25, side: -0.07, dip: 0.10, yaw: -0.64, roll: 0.42, magRoll: 1.35 },
+  ghost:    { drop: 0.20, side: 0.06, dip: 0.08, yaw: 0.48, roll: -0.30, magYaw: 0.6 },
+  marker:   { drop: 0.04, side: -0.02, dip: 0.07, yaw: 0.22, roll: -0.18, spin: Math.PI * 2 },
+  stinger:  { drop: 0.30, side: -0.09, dip: 0.13, yaw: -0.72, roll: 0.48, magRoll: 1.65 },
+  spectre:  { drop: 0.26, side: 0.08, dip: 0.10, yaw: 0.60, roll: -0.44, magYaw: -0.78 },
+  bulldog:  { drop: 0.32, side: -0.10, dip: 0.15, yaw: -0.54, roll: 0.58, magRoll: 1.2 },
+  guardian: { drop: 0.24, side: 0.10, dip: 0.09, yaw: 0.82, roll: -0.38, magYaw: 0.92 },
+  phantom:  { drop: 0.34, side: -0.12, dip: 0.12, yaw: -0.70, roll: 0.50, magRoll: 1.45 },
+  vantage:  { drop: 0.29, side: 0.11, dip: 0.14, yaw: 0.66, roll: -0.56, magYaw: -1.05 },
+  bucky:    { drop: 0.05, side: -0.06, dip: 0.19, yaw: -0.86, roll: 0.72, kick: 0.15 },
+  judge:    { drop: 0.22, side: 0.09, dip: 0.16, yaw: 0.72, roll: -0.68, magRoll: -1.1 },
+  marshal:  { drop: 0.14, side: -0.10, dip: 0.18, yaw: -0.92, roll: 0.36, bolt: 0.11 },
+  outlaw:   { drop: 0.17, side: 0.12, dip: 0.17, yaw: 0.88, roll: -0.42, bolt: 0.14 },
+  operator: { drop: 0.22, side: -0.13, dip: 0.22, yaw: -0.76, roll: 0.52, bolt: 0.17 },
+  ares:     { drop: 0.38, side: 0.13, dip: 0.20, yaw: 0.58, roll: -0.70, magRoll: -1.5 },
+  odin:     { drop: 0.46, side: -0.15, dip: 0.25, yaw: -0.62, roll: 0.82, magRoll: 1.8 },
+};
+
 export class ViewModel {
   constructor(camera, modelLoader = null) {
     this.camera = camera;
@@ -156,6 +180,7 @@ export class ViewModel {
     this._mag = null;
     model.traverse((o) => { if (o.userData && o.userData.part === 'magazine') this._mag = o; });
     this._magBase = this._mag ? this._mag.position.clone() : null;
+    this._magBaseRot = this._mag ? this._mag.rotation.clone() : null;
 
     this._spinner = model.userData.spinner || null;
 
@@ -430,18 +455,25 @@ export class ViewModel {
   }
 
   _animateMagazine() {
-    if (!this._mag || !this._magBase) return;
+    if (!this._mag || !this._magBase || !this._magBaseRot) return;
     const p = this._reloadP || 0;
+    const style = RELOAD_STYLES[this._id] || {};
     let drop = 0;
     if (p > 0) {
+      const maxDrop = style.drop ?? 0.26;
       if (p < 0.12) drop = 0;
-      else if (p < 0.34) drop = (p - 0.12) / 0.22 * 0.26;
-      else if (p < 0.5) drop = 0.26;
-      else if (p < 0.72) drop = 0.26 * (1 - (p - 0.5) / 0.22);
+      else if (p < 0.34) drop = (p - 0.12) / 0.22 * maxDrop;
+      else if (p < 0.5) drop = maxDrop;
+      else if (p < 0.72) drop = maxDrop * (1 - (p - 0.5) / 0.22);
       else drop = 0;
     }
-    this._mag.position.set(this._magBase.x, this._magBase.y - drop, this._magBase.z);
-    this._mag.rotation.z = drop * 1.2;
+    const phase = style.drop ? drop / style.drop : 0;
+    this._mag.position.set(this._magBase.x + (style.side || 0) * phase, this._magBase.y - drop, this._magBase.z);
+    this._mag.rotation.set(
+      this._magBaseRot.x,
+      this._magBaseRot.y + (style.magYaw || 0) * phase,
+      this._magBaseRot.z + (style.magRoll || 1.2) * phase,
+    );
   }
 
   _applyTransform(dt, moveState) {
@@ -464,15 +496,17 @@ export class ViewModel {
     this._off.y += this._recoil * 0.012;
 
     const p = this._reloadP || 0;
+    const reloadStyle = RELOAD_STYLES[this._id] || {};
     const dip = Math.sin(Math.PI * p);
     const settle = Math.min(1, p / 0.12);
-    const reloadDip = dip * settle;
-    this._off.y -= reloadDip * 0.11;
-    this._off.x -= reloadDip * 0.04;
-    this._off.z += reloadDip * 0.05;
+    const reloadDip = dip * settle * (reloadStyle.dip ?? 0.11);
+    const reloadEase = Math.sin(Math.PI * Math.min(1, p));
+    this._off.y -= reloadDip;
+    this._off.x += (reloadStyle.side || -0.04) * reloadEase;
+    this._off.z += (0.05 + (reloadStyle.kick || reloadStyle.bolt || 0)) * reloadEase;
 
-    const reloadSpin = (!this._isMelee && this._id === 'marker' && p > 0)
-      ? (p * p * (3 - 2 * p)) * Math.PI * 2
+    const reloadSpin = !this._isMelee && p > 0
+      ? (p * p * (3 - 2 * p)) * (reloadStyle.spin || 0)
       : 0;
 
     this._off.y -= this._equip * 0.14;
@@ -533,9 +567,9 @@ export class ViewModel {
     }
 
     this._e.set(
-      -this._recoil * 0.18 + reloadDip * 0.55 + this._equip * 0.4 + insPitch + reloadSpin,
-      reloadDip * 0.35 + insYaw,
-      reloadDip * 0.5 - this._equip * 0.2 + insRoll,
+      -this._recoil * 0.18 + reloadDip * 5 + this._equip * 0.4 + insPitch + reloadSpin,
+      (reloadStyle.yaw || 0) * reloadEase + insYaw,
+      (reloadStyle.roll || 0) * reloadEase - this._equip * 0.2 + insRoll,
       'XYZ'
     );
     this._q.setFromEuler(this._e);
