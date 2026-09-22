@@ -11,7 +11,7 @@ import { HitSystem } from './Combat/HitSystem.js';
 import { Target } from './Combat/Target.js';
 import { Bots } from './Combat/Bot.js?v=range-static-dps';
 import { AbilitySystem } from './Abilities/AbilitySystem.js';
-import { HUD } from './UI/HUD.js?v=training-reset-key';
+import { HUD } from './UI/HUD.js?v=clean-hud';
 import { BuyMenu } from './UI/BuyMenu.js';
 import { Weapons, Armor } from './Weapons/WeaponData.js';
 import { Minimap } from './UI/Minimap.js?v=training-range';
@@ -462,7 +462,6 @@ class Game {
     this._stateSeqByPlayer = new Map();
     this._stateGaps = 0;
     this._interpolationDelay = 0.12;
-    this._lastNetworkPanelAt = 0;
     this._fps = 0;
     this._scores = new Map();
     this._lastAttacker = null;
@@ -825,7 +824,6 @@ class Game {
     const fps = this._fpsFrames / this._fpsAccum;
     this._fpsAccum = 0; this._fpsFrames = 0;
     this._fps = Math.round(fps);
-    this.hud.setNetStats(this._fps, this.net && this.net.connected ? this._ping : null, this._jitter);
     let s = this._renderScale;
     if (fps < 50) s = Math.max(0.6, s - 0.1);
     else if (fps > 75) s = Math.min(1, s + 0.1);
@@ -863,7 +861,6 @@ class Game {
     const loss = this._packetLoss() || 0;
     this._interpolationDelay = Math.min(0.20, 0.065 + this._jitter / 500 + loss / 400);
     this.remotePlayers.setInterpolationDelay(this._interpolationDelay);
-    this.hud.setNetStats(this._fps, this._ping, this._jitter);
   }
 
   _recordPingOutcome(ok) {
@@ -882,26 +879,6 @@ class Game {
     const last = this._stateSeqByPlayer.get(state.id);
     if (Number.isInteger(last) && state.seq > last + 1) this._stateGaps += state.seq - last - 1;
     if (!Number.isInteger(last) || state.seq > last) this._stateSeqByPlayer.set(state.id, state.seq);
-  }
-
-  _networkPanelTick() {
-    const now = performance.now();
-    if (now - this._lastNetworkPanelAt < 250) return;
-    this._lastNetworkPanelAt = now;
-    const net = this.net?.stats() || {};
-    this.hud.setNetworkDetails({
-      connected: !!net.connected,
-      reconnecting: !!net.reconnecting,
-      ping: this._ping,
-      jitter: this._jitter,
-      loss: this._packetLoss(),
-      stateGaps: this._stateGaps,
-      txRate: net.txRate || 0,
-      rxRate: net.rxRate || 0,
-      buffered: net.buffered || 0,
-      reconnects: net.reconnects || 0,
-      interpolation: this._interpolationDelay,
-    });
   }
 
   _setShadows(on) {
@@ -1009,7 +986,6 @@ class Game {
       this._interpolationDelay = 0.12;
       this.remotePlayers.setInterpolationDelay(this._interpolationDelay);
     }
-    this._networkPanelTick();
     this.remotePlayers.update(frameTime);
     this._updateSmokeEnemyVisibility();
 

@@ -13,21 +13,6 @@ export class HUD {
         <div class="v-hm v-hm-t"></div><div class="v-hm v-hm-b"></div>
         <div class="v-hm v-hm-l"></div><div class="v-hm v-hm-r"></div>
       </div>
-      <div id="v-netstats">-- FPS · -- ms</div>
-      <button id="v-network-toggle" type="button" aria-expanded="false">NETWORK</button>
-      <section id="v-network-panel" hidden aria-label="Network statistics">
-        <div class="v-network-title"><span>NETWORK</span><span id="v-network-state">CONNECTING</span></div>
-        <div class="v-network-grid">
-          <span>PING</span><b id="v-network-ping">--</b>
-          <span>JITTER</span><b id="v-network-jitter">--</b>
-          <span>PACKET LOSS</span><b id="v-network-loss">--</b>
-          <span>STATE GAPS</span><b id="v-network-gaps">0</b>
-          <span>SMOOTHING</span><b id="v-network-smoothing">--</b>
-          <span>UPDATES</span><b id="v-network-rate">--</b>
-          <span>BUFFER</span><b id="v-network-buffer">0 B</b>
-          <span>RECONNECTS</span><b id="v-network-reconnects">0</b>
-        </div>
-      </section>
       <section id="v-training" hidden aria-label="Training range results">
         <div class="v-training-title">TRAINING RANGE</div>
         <div class="v-training-count"><span>SHOTS</span><b id="v-training-shots">0</b></div>
@@ -118,29 +103,15 @@ export class HUD {
     this._toastTimer = 0;
     this._bannerTimer = 0;
     this._setGap(H.crosshairBaseGap);
-    const networkButton = this.$('#v-network-toggle');
-    networkButton.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.toggleNetworkPanel();
-    });
     window.addEventListener('keydown', (e) => {
       if (e.repeat) return;
       const active = document.activeElement;
       if (active && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) return;
-      // The unshifted Minus key is reserved for clearing the range result
-      // panel. Shift+- remains available for the network-panel shortcut.
+      // The unshifted Minus key clears range results while that panel is open.
       if (e.key === '-' && !this.$('#v-training').hidden) {
         e.preventDefault();
         this._trainingReset?.();
-        return;
       }
-      // Support both the typed character and the physical Shift+- key, which
-      // browsers report differently on some keyboard layouts. N is an
-      // unbound in-game fallback for layouts where the underscore is awkward.
-      const networkShortcut = e.key === '_' || (e.code === 'Minus' && e.shiftKey) || e.code === 'KeyN';
-      if (!networkShortcut) return;
-      e.preventDefault();
-      this.toggleNetworkPanel();
     });
     this.$('#v-training-reset').addEventListener('click', (e) => {
       e.stopPropagation();
@@ -194,36 +165,6 @@ export class HUD {
     ).join('');
   }
   _esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
-
-  setNetStats(fps, ping, jitter = null) {
-    const el = this.$('#v-netstats');
-    const net = ping == null ? '--' : `${ping} ms${jitter == null ? '' : ` · ±${jitter}`}`;
-    el.textContent = `${fps} FPS · ${net}`;
-    el.classList.toggle('v-net-bad', ping != null && (ping > 120 || jitter > 35));
-    el.classList.toggle('v-net-warn', ping != null && !el.classList.contains('v-net-bad') && (ping > 60 || jitter > 15));
-  }
-
-  toggleNetworkPanel() {
-    const panel = this.$('#v-network-panel');
-    panel.hidden = !panel.hidden;
-    this.$('#v-network-toggle').setAttribute('aria-expanded', String(!panel.hidden));
-  }
-
-  setNetworkDetails({ connected, reconnecting, ping, jitter, loss, stateGaps, txRate, rxRate, buffered, reconnects, interpolation }) {
-    const set = (id, text) => { this.$(id).textContent = text; };
-    const state = reconnecting ? 'RECONNECTING' : connected ? 'ONLINE' : 'OFFLINE';
-    const stateEl = this.$('#v-network-state');
-    stateEl.textContent = state;
-    stateEl.className = `v-network-${state.toLowerCase()}`;
-    set('#v-network-ping', ping == null ? '--' : `${Math.round(ping)} ms`);
-    set('#v-network-jitter', jitter == null ? '--' : `±${Math.round(jitter)} ms`);
-    set('#v-network-loss', loss == null ? '--' : `${loss.toFixed(1)}%`);
-    set('#v-network-gaps', String(stateGaps || 0));
-    set('#v-network-smoothing', interpolation == null ? '--' : `${Math.round(interpolation * 1000)} ms`);
-    set('#v-network-rate', `${txRate.toFixed(0)}↑ / ${rxRate.toFixed(0)}↓ pkt/s`);
-    set('#v-network-buffer', `${Math.max(0, buffered || 0).toLocaleString('en-US')} B`);
-    set('#v-network-reconnects', String(reconnects || 0));
-  }
 
   setShield(shield) {
     const el = this.$('#v-shield');

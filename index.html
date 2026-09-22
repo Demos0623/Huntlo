@@ -287,30 +287,6 @@
       color: #eaf0f7; font-family: inherit; font-weight: 700; letter-spacing: 2px; cursor: pointer; }
     .tc-edit-done { background: var(--accent); color: #0e1116; border-color: var(--accent); }
 
-    /* FPS + ping readout (top-left) */
-    #v-netstats { position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 14; pointer-events: none;
-      font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.5px;
-      color: #8fe3c8; background: rgba(10,14,20,0.5); padding: 3px 8px; border-radius: 6px;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
-    #v-netstats.v-net-bad { color: #ff8a8a; }
-    #v-netstats.v-net-warn { color: #ffd479; }
-    #v-network-toggle { position: fixed; top: 8px; right: 12px; z-index: 18;
-      padding: 6px 10px; border: 1px solid rgba(143,227,200,0.42); border-radius: 7px;
-      background: rgba(10,14,20,0.68); color: #8fe3c8; font-family: ui-monospace, Menlo, Consolas, monospace;
-      font-size: 11px; font-weight: 800; letter-spacing: 1px; cursor: pointer; }
-    #v-network-toggle:hover, #v-network-toggle[aria-expanded="true"] { background: rgba(23,54,61,0.88); border-color: #8fe3c8; }
-    #v-network-panel { position: fixed; top: 42px; right: 12px; z-index: 18; width: 214px;
-      padding: 12px; border: 1px solid rgba(143,227,200,0.32); border-radius: 10px;
-      background: rgba(8,12,18,0.92); box-shadow: 0 10px 28px rgba(0,0,0,0.34);
-      color: #dfe9ee; font-family: ui-monospace, Menlo, Consolas, monospace; pointer-events: none; }
-    #v-network-panel[hidden] { display: none; }
-    .v-network-title { display: flex; justify-content: space-between; align-items: center; padding-bottom: 9px;
-      margin-bottom: 8px; border-bottom: 1px solid rgba(143,227,200,0.2); color: #8fe3c8; font-size: 12px; font-weight: 800; letter-spacing: 1.5px; }
-    #v-network-state { font-size: 9px; letter-spacing: 1px; }
-    .v-network-online { color: #8fe3c8; }.v-network-reconnecting { color: #ffd479; }.v-network-offline { color: #ff8a8a; }
-    .v-network-grid { display: grid; grid-template-columns: 1fr auto; gap: 7px 10px; font-size: 10px; letter-spacing: 0.5px; }
-    .v-network-grid span { color: #8d9baa; }.v-network-grid b { color: #edf6f8; text-align: right; font-weight: 700; }
-
     /* Training range result panel */
     #v-training { position: fixed; top: 46px; left: 12px; z-index: 18; width: 210px; padding: 12px;
       border: 1px solid rgba(227,177,79,0.46); border-radius: 10px; background: rgba(8,12,18,0.92);
@@ -520,6 +496,6 @@
        ?relay=wss://your-relay to the page URL. -->
   <script>window.HUNTLO_RELAY_URL = 'wss://huntlo-relay.demoslin0623.workers.dev';</script>
 
-  <script type="module" src="./Valo/main.js?v=training-reset-key"></script>
+  <script type="module" src="./Valo/main.js?v=clean-hud"></script>
 </body>
 </html>
