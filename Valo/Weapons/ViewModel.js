@@ -510,7 +510,10 @@ export class ViewModel {
           const drawP = 1 - this._drawSpinT / 0.55;
           spin += drawP * drawP * drawP * Math.PI * 2;
         }
-        if (this._hitSpinT > 0) spin += (1 - this._hitSpinT / this._hitSpinDur) * Math.PI * 2;
+        if (this._hitSpinT > 0) {
+          const hitP = 1 - this._hitSpinT / this._hitSpinDur;
+          spin += hitP * hitP * hitP * Math.PI * 2;
+        }
         if (this._meleeSpinning) spin += this._meleeSpin;
         this._spinner.rotation.z = spin;
       }

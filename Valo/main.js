@@ -5,7 +5,7 @@ import { isPerfMode, setPerfMode } from './perf.js';
 import { FPSCamera } from './Camera/FPSCamera.js';
 import { MovementController } from './Movement/MovementController.js';
 import { WeaponManager } from './Weapons/WeaponManager.js';
-import { ViewModel } from './Weapons/ViewModel.js?v=knife-draw-spin';
+import { ViewModel } from './Weapons/ViewModel.js?v=knife-hit-spin';
 import { WeaponModelLoader } from './Weapons/WeaponModelLoader.js';
 import { HitSystem } from './Combat/HitSystem.js';
 import { Target } from './Combat/Target.js';
