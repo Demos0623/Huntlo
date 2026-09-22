@@ -110,7 +110,9 @@ export class HUD {
       this.toggleNetworkPanel();
     });
     window.addEventListener('keydown', (e) => {
-      if (e.key !== '_') return;
+      // Support both the typed character and the physical Shift+- key, which
+      // browsers report differently on some keyboard layouts.
+      if (e.repeat || (e.key !== '_' && !(e.code === 'Minus' && e.shiftKey))) return;
       const active = document.activeElement;
       if (active && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) return;
       e.preventDefault();
