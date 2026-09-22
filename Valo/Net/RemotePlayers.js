@@ -115,6 +115,27 @@ class RemotePlayer {
     this._name = '';
     this._nameTag = null;
     this._smokeHidden = false;
+    this.spawnShield = false;
+
+    // Spawn protection is deliberately a transparent world-space bubble, not
+    // a UI marker. Everyone can tell that this player cannot be damaged yet.
+    this._spawnShield = new THREE.Group();
+    this._spawnShield.position.set(0, 0.9, 0);
+    this._spawnShield.visible = false;
+    this._spawnShieldShell = new THREE.Mesh(
+      new THREE.SphereGeometry(0.88, 22, 16),
+      new THREE.MeshBasicMaterial({ color: 0x4bdcff, transparent: true, opacity: 0.16, depthWrite: false, side: THREE.DoubleSide })
+    );
+    this._spawnShieldShell.raycast = () => {};
+    this._spawnShield.add(this._spawnShieldShell);
+    const shieldLines = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.SphereGeometry(0.89, 12, 8)),
+      new THREE.LineBasicMaterial({ color: 0xb8f4ff, transparent: true, opacity: 0.7, depthWrite: false })
+    );
+    shieldLines.raycast = () => {};
+    this._spawnShield.add(shieldLines);
+    this._spawnShieldLines = shieldLines;
+    this.group.add(this._spawnShield);
 
     scene.add(this.group);
 
@@ -197,6 +218,7 @@ class RemotePlayer {
 
   applyDamage(amount, zone = 'body') {
     if (this.dead) return { killed: false, ignored: true };
+    if (this.spawnShield) return { killed: false, ignored: true, shielded: true };
     // No friendly fire: a teammate takes no damage and never counts as a kill.
     if (this._team && this._myTeam && this._team === this._myTeam) {
       return { killed: false, ignored: true };
@@ -235,14 +257,25 @@ class RemotePlayer {
     if (state.name) this.setName(state.name);
     if (state.team) this.setTeam(state.team);
     if (typeof state.muscle === 'boolean') this.setMuscle(state.muscle);
+    if (typeof state.spawnShield === 'boolean') this.setSpawnShield(state.spawnShield);
     if (state.dead) this.setDead(true); else if (this.dead && state.dead === false) this.setDead(false);
   }
 
-  setDead(v) { this.dead = v; this.group.visible = !v && !this._smokeHidden; }
+  setSpawnShield(on) {
+    this.spawnShield = !!on;
+    this._spawnShield.visible = this.spawnShield && !this.dead && !this._smokeHidden;
+  }
+
+  setDead(v) {
+    this.dead = v;
+    this.group.visible = !v && !this._smokeHidden;
+    this._spawnShield.visible = this.spawnShield && !v && !this._smokeHidden;
+  }
 
   setSmokeHidden(v) {
     this._smokeHidden = !!v;
     this.group.visible = !this.dead && !this._smokeHidden;
+    this._spawnShield.visible = this.spawnShield && !this.dead && !this._smokeHidden;
   }
 
   update(dt) {
@@ -277,6 +310,13 @@ class RemotePlayer {
     const s = Math.sin(this._phase) * this._amp;
     this.legL.rotation.x = s; this.legR.rotation.x = -s;
     this.armL.rotation.x = -s * 0.7; this.armR.rotation.x = s * 0.7;
+
+    if (this.spawnShield) {
+      const pulse = 1 + Math.sin(performance.now() * 0.008) * 0.045;
+      this._spawnShield.scale.setScalar(pulse);
+      this._spawnShieldShell.material.opacity = 0.13 + (pulse - 0.955) * 0.55;
+      this._spawnShieldLines.material.opacity = 0.52 + (pulse - 0.955) * 2.1;
+    }
   }
 
   dispose(scene) { scene.remove(this.group); }

@@ -13,6 +13,9 @@ export class HUD {
         <div class="v-hm v-hm-t"></div><div class="v-hm v-hm-b"></div>
         <div class="v-hm v-hm-l"></div><div class="v-hm v-hm-r"></div>
       </div>
+      <div id="v-spawn-shield" hidden aria-live="polite">
+        <span>SPAWN SHIELD</span><b>MOVE TO START TIMER</b>
+      </div>
       <section id="v-training" hidden aria-label="Training range results">
         <div class="v-training-title">TRAINING RANGE</div>
         <div class="v-training-count"><span>SHOTS</span><b id="v-training-shots">0</b></div>
@@ -121,6 +124,16 @@ export class HUD {
 
   setHealth(hp) {
     this.$('#v-health .v-num').textContent = Math.max(0, Math.round(hp));
+  }
+
+  setSpawnShield(on, seconds = null) {
+    const el = this.$('#v-spawn-shield');
+    el.hidden = !on;
+    if (!on) return;
+    el.classList.toggle('v-countdown', Number.isFinite(seconds));
+    el.querySelector('b').textContent = Number.isFinite(seconds)
+      ? `${Math.max(0, seconds).toFixed(1)}s PROTECTED`
+      : 'MOVE TO START TIMER';
   }
 
   setTrainingVisible(on) { this.$('#v-training').hidden = !on; }

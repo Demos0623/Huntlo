@@ -98,6 +98,18 @@
     #v-status.v-equip { color: #8fb6ff; }
     #v-status.v-empty { color: var(--hit); }
 
+    #v-spawn-shield {
+      position: absolute; top: 22px; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      padding: 8px 16px; border: 1px solid rgba(105, 225, 255, 0.8); border-radius: 10px;
+      background: rgba(8, 32, 51, 0.7); color: #baf5ff;
+      box-shadow: 0 0 24px rgba(52, 210, 255, 0.28), inset 0 0 14px rgba(82, 221, 255, 0.12);
+      text-shadow: 0 1px 3px #000; pointer-events: none;
+    }
+    #v-spawn-shield span { font-size: 10px; letter-spacing: 3px; font-weight: 800; }
+    #v-spawn-shield b { font-size: 12px; letter-spacing: 1px; }
+    #v-spawn-shield.v-countdown { border-color: rgba(169, 242, 255, 0.95); }
+
     /* Toast (weapon switch) */
     #v-toast {
       position: absolute; left: 50%; top: 64%; transform: translateX(-50%);
@@ -496,6 +508,6 @@
        ?relay=wss://your-relay to the page URL. -->
   <script>window.HUNTLO_RELAY_URL = 'wss://huntlo-relay.demoslin0623.workers.dev';</script>
 
-  <script type="module" src="./Valo/main.js?v=unique-reloads"></script>
+  <script type="module" src="./Valo/main.js?v=spawn-shield"></script>
 </body>
 </html>

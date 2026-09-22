@@ -11,7 +11,7 @@ import { HitSystem } from './Combat/HitSystem.js';
 import { Target } from './Combat/Target.js';
 import { Bots } from './Combat/Bot.js?v=range-static-dps';
 import { AbilitySystem } from './Abilities/AbilitySystem.js';
-import { HUD } from './UI/HUD.js?v=clean-hud';
+import { HUD } from './UI/HUD.js?v=spawn-shield';
 import { BuyMenu } from './UI/BuyMenu.js';
 import { Weapons, Armor } from './Weapons/WeaponData.js';
 import { Minimap } from './UI/Minimap.js?v=training-range';
@@ -23,7 +23,7 @@ import { setupEnvironment } from './World/Environment.js';
 import { buildRTX } from './Render/RTX.js';
 import { PlayerModel } from './World/PlayerModel.js';
 import { Net } from './Net/Net.js';
-import { RemotePlayers } from './Net/RemotePlayers.js';
+import { RemotePlayers } from './Net/RemotePlayers.js?v=spawn-shield';
 
 const FIXED_DT = 1 / 120;
 const MAX_STEPS = 5;
@@ -131,6 +131,8 @@ class Game {
 
     this.health = 150;
     this.hud.setHealth(this.health);
+    this._spawnShield = { active: false, waitingForMove: false, remaining: 0, origin: new THREE.Vector3() };
+    this._spawnShieldNetAccum = 0;
 
     this.credits = 9000;
     this.infiniteMoney = false;
@@ -516,6 +518,7 @@ class Game {
         // must be a complete state.
         this._lastSentState = null;
         this._lastStateKeyframeAt = 0;
+        this._broadcastSpawnShield(!!this._spawnShield?.active);
       })
       .on('welcome', (m) => {
         // The relay may provide a suggested team, but local team selection is
@@ -552,6 +555,9 @@ class Game {
           this.remotePlayers.setState(m.id, m);
           this._score(m.id, m.name);
         }
+      })
+      .on('spawnShield', (m) => {
+        if (m.id !== this.net.id) this.remotePlayers.ensure(m.id).setSpawnShield(!!m.on);
       })
       .on('hit', (m) => {
         if (m.target === this.net.id) this._takeDamage(m.dmg, m.head, m.id);
@@ -752,6 +758,7 @@ class Game {
       e.stopPropagation();
       this._closeConsole?.();
       this.health = 150; this.hud.setHealth(this.health);
+      this._beginSpawnShield();
       const ci = document.getElementById('v-cmd'); if (ci) ci.value = '';
       lock();
     });
@@ -964,6 +971,15 @@ class Game {
         this._lastSentState = state;
         if (full) this._lastStateKeyframeAt = now;
       }
+    }
+
+    // State packets are delta-compressed by the relay, so announce active
+    // spawn protection separately. This also lets a newly joined player see a
+    // stationary protected player without changing the deployed relay.
+    this._spawnShieldNetAccum += frameTime;
+    if (this._spawnShield?.active && this.net.connected && this._spawnShieldNetAccum >= 1) {
+      this._spawnShieldNetAccum = 0;
+      this._broadcastSpawnShield(true);
     }
 
     this._pingAccum += frameTime;
@@ -1479,6 +1495,7 @@ class Game {
     this.movement.position.copy(sp.pos);
     this.movement.velocity.set(0, 0, 0);
     this.camera.yaw = sp.yaw; this.camera.pitch = 0;
+    this._beginSpawnShield();
 
     this.remotePlayers?.setMyTeam(team);
   }
@@ -1505,6 +1522,7 @@ class Game {
     this.movement.position.copy(map.spawns[this._team]?.pos || map.spawns.attacker.pos);
     this.camera.yaw = map.spawns[this._team]?.yaw ?? map.spawns.attacker.yaw;
     this.camera.pitch = 0;
+    this._beginSpawnShield();
     this._refreshActiveMapColliders();
     this.minimap?.setMap({
       ...map,
@@ -1546,9 +1564,49 @@ class Game {
     try { localStorage.setItem('valo_control_mode', mode); } catch (_) { /* ignore */ }
   }
 
+  _beginSpawnShield() {
+    const shield = this._spawnShield;
+    shield.active = true;
+    shield.waitingForMove = true;
+    shield.remaining = 2;
+    shield.origin.copy(this.movement.position);
+    this._spawnShieldNetAccum = 0;
+    this.hud?.setSpawnShield(true);
+    this._broadcastSpawnShield(true);
+  }
+
+  _updateSpawnShield(dt) {
+    const shield = this._spawnShield;
+    if (!shield?.active) return;
+
+    if (shield.waitingForMove) {
+      const dx = this.movement.position.x - shield.origin.x;
+      const dz = this.movement.position.z - shield.origin.z;
+      // Tiny physics settling at spawn should not spend the protection.
+      if (dx * dx + dz * dz < 0.0144) {
+        this.hud?.setSpawnShield(true);
+        return;
+      }
+      shield.waitingForMove = false;
+    }
+
+    shield.remaining = Math.max(0, shield.remaining - dt);
+    this.hud?.setSpawnShield(true, shield.remaining);
+    if (shield.remaining > 0) return;
+
+    shield.active = false;
+    this.hud?.setSpawnShield(false);
+    this._broadcastSpawnShield(false);
+  }
+
+  _broadcastSpawnShield(on) {
+    if (this.net?.connected) this.net.send({ t: 'spawnShield', on: !!on });
+  }
+
   _takeDamage(dmg, head, byId) {
     if (this._god) return;
     if (this._dead || !dmg) return;
+    if (this._spawnShield?.active) return;
     if (byId != null) this._lastAttacker = byId;
     let d = dmg;
     if (this.shield > 0) { const a = Math.min(this.shield, d); this.shield -= a; d -= a; this.hud.setShield(this.shield); }
@@ -1579,6 +1637,7 @@ class Game {
     this.movement.position.copy(sp.pos);
     this.movement.velocity.set(0, 0, 0);
     this.camera.yaw = sp.yaw; this.camera.pitch = 0;
+    this._beginSpawnShield();
     this.weapons.refillAll();
     this.hud.setHealth(this.health);
     this.hud.hideDeath();
@@ -1610,6 +1669,7 @@ class Game {
 
     const basis = this.camera.getMoveBasis();
     this.movement.update(dt, moveInput, basis);
+    this._updateSpawnShield(dt);
 
     const weaponActions = locked ? {
       fireDown: this.input.isDown('fire'),
