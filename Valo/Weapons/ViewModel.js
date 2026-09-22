@@ -504,7 +504,12 @@ export class ViewModel {
       }
       if (this._spinner) {
         let spin = (345 * Math.PI) / 180;
-        if (this._drawSpinT > 0) spin += (1 - this._drawSpinT / 0.55) * Math.PI * 2;
+        if (this._drawSpinT > 0) {
+          // Ease in the draw spin: it starts controlled, then accelerates into
+          // the final pull-out instead of rotating at one constant speed.
+          const drawP = 1 - this._drawSpinT / 0.55;
+          spin += drawP * drawP * drawP * Math.PI * 2;
+        }
         if (this._hitSpinT > 0) spin += (1 - this._hitSpinT / this._hitSpinDur) * Math.PI * 2;
         if (this._meleeSpinning) spin += this._meleeSpin;
         this._spinner.rotation.z = spin;
