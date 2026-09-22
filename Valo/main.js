@@ -336,18 +336,17 @@ class Game {
       const availableCodes = Object.keys(this._commands).filter((name) =>
         name !== 'list' && name !== 'cheat' && !name.startsWith('bot') &&
         (showCheatsInList || (!cheats[name] && name !== 'selfbot')));
-      const groups = [
-        { title: 'COSMETIC', codes: ['muscle', 'rainbow'] },
-        { title: 'GAME', codes: ['health'] },
-        { title: 'TOOL', codes: ['nuke', 'range', 'home'] },
-      ];
-      if (showCheatsInList) {
-        groups.push(
+      const groups = showCheatsInList
+        ? [
           { title: 'AIM', codes: ['nmi', 'norecoil', 'aimlock', 'trigger', 'flick'] },
           { title: 'MOVEMENT', codes: ['fly', 'speed', 'tp'] },
           { title: 'MISC', codes: ['esp', 'mapesp', 'hitbox', 'bhitbox', 'infammo', 'god', 'rapid', 'spin', 'selfbot'] },
-        );
-      }
+        ]
+        : [
+          { title: 'COSMETIC', codes: ['muscle', 'rainbow'] },
+          { title: 'GAME', codes: ['health'] },
+          { title: 'TOOL', codes: ['nuke', 'range', 'home'] },
+        ];
 
       for (const group of groups) {
         const codes = group.codes.filter((code) => availableCodes.includes(code));
