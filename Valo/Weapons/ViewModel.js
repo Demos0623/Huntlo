@@ -513,7 +513,9 @@ export class ViewModel {
         if (this._hitSpinT > 0) {
           const hitP = 1 - this._hitSpinT / this._hitSpinDur;
           // Negative local Z rotation reads clockwise from the player's view.
-          spin -= hitP * hitP * hitP * Math.PI * 2;
+          // A quadratic ramp begins noticeably faster than the draw's cubic
+          // curve while still building speed through the end of the hit.
+          spin -= hitP * hitP * Math.PI * 2;
         }
         if (this._meleeSpinning) spin += this._meleeSpin;
         this._spinner.rotation.z = spin;
