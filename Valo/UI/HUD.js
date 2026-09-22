@@ -262,8 +262,12 @@ export class HUD {
       style="width:100%;height:100%">${s}</svg>`;
   }
 
-  setSpread(spread) {
-    const gap = H.crosshairBaseGap + spread * H.crosshairSpreadPx;
+  setSpread(spread, moveState = null) {
+    // At rest the four strokes meet in the centre as one clean cross. Moving
+    // or leaving the ground opens them again to communicate inaccuracy.
+    const still = !!moveState?.grounded && (moveState.speed || 0) < 0.08;
+    const gap = still ? 0 : H.crosshairBaseGap + spread * H.crosshairSpreadPx;
+    this.$('#v-crosshair').classList.toggle('v-closed', still);
     this._setGap(gap);
   }
 

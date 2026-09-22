@@ -944,7 +944,7 @@ class Game {
     });
     this._updateNuke(frameTime);
     this.abilities.update(frameTime);
-    this.hud.setSpread(this.weapons.getCurrentSpread());
+    this.hud.setSpread(this.weapons.getCurrentSpread(), this.movement.getAccuracyState());
     this.hud.update(frameTime);
     if (this._flashedT > 0) this._flashedT = Math.max(0, this._flashedT - frameTime);
 
