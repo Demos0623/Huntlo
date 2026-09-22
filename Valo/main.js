@@ -31,7 +31,14 @@ class Game {
   constructor() {
     const canvas = document.getElementById('game');
 
-    this._isMobile = TouchControls.isTouchDevice();
+    const detectedMobile = TouchControls.isTouchDevice();
+    let savedControlMode = detectedMobile ? 'mobile' : 'desktop';
+    try {
+      const saved = localStorage.getItem('valo_control_mode');
+      if (saved === 'mobile' || saved === 'desktop') savedControlMode = saved;
+    } catch (_) { /* use device default */ }
+    this.controlMode = savedControlMode;
+    this._isMobile = this.controlMode === 'mobile';
     this._perf = isPerfMode();
 
     this._lowEnd = (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4;
@@ -67,7 +74,9 @@ class Game {
     this.movement = new MovementController(map.world, this._spawns[team].pos.clone());
     this.input = new InputManager(canvas);
 
-    this.touch = TouchControls.isTouchDevice() ? new TouchControls(document.getElementById('hud')) : null;
+    // Build touch controls once and keep them hidden for desktop mode. This
+    // lets the menu choice take effect immediately without reloading the map.
+    this.touch = new TouchControls(document.getElementById('hud'));
     if (this.touch) this.input.attachTouch(this.touch);
     this.audio = new AudioManager();
     this.hitSystem = new HitSystem(this.scene, map.colliders);
@@ -202,6 +211,18 @@ class Game {
       paintTeam();
       teamWrap.querySelectorAll('.v-team-b').forEach((b) =>
         b.addEventListener('click', (e) => { e.stopPropagation(); this.setTeam(b.dataset.team); paintTeam(); }));
+    }
+
+    const controlWrap = document.getElementById('v-control-mode');
+    if (controlWrap) {
+      const paintControlMode = () => controlWrap.querySelectorAll('.v-team-b').forEach(
+        (b) => b.classList.toggle('v-control-on', b.dataset.control === this.controlMode));
+      paintControlMode();
+      controlWrap.querySelectorAll('.v-team-b').forEach((b) => b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._setControlMode(b.dataset.control);
+        paintControlMode();
+      }));
     }
 
     this._commands = {};
@@ -597,7 +618,7 @@ class Game {
     const lock = () => {
       if (this._dead) return;
       if (this.buyMenu?.isOpen) return;
-      if (this.touch) {
+      if (this.controlMode === 'mobile' && this.touch) {
         if (!this.touch.engaged) {
           this.touch.engaged = true;
           this.touch.setVisible(true);
@@ -1369,6 +1390,17 @@ class Game {
     this.camera.yaw = sp.yaw; this.camera.pitch = 0;
 
     this.remotePlayers?.setMyTeam(team);
+  }
+
+  _setControlMode(mode) {
+    if (mode !== 'mobile' && mode !== 'desktop') return;
+    this.controlMode = mode;
+    this._isMobile = mode === 'mobile';
+    if (this.touch) {
+      this.touch.engaged = false;
+      this.touch.setVisible(false);
+    }
+    try { localStorage.setItem('valo_control_mode', mode); } catch (_) { /* ignore */ }
   }
 
   _takeDamage(dmg, head, byId) {

@@ -354,6 +354,8 @@
       letter-spacing: 1.5px; font-size: 12px; cursor: pointer; }
     .v-team-b[data-team="attacker"].v-team-on { border-color: #f0cd53; color: #f9df76; background: rgba(220,177,43,0.12); }
     .v-team-b[data-team="defender"].v-team-on { border-color: #827dff; color: #b6b3ff; background: rgba(108,101,255,0.14); }
+    .v-control-label { margin: 4px 0 -7px; color: #8f9bb3; font-size: 10px; font-weight: 700; letter-spacing: 2px; }
+    #v-control-mode .v-team-b.v-control-on { border-color: #6ee3c1; color: #b4ffe6; background: rgba(47,190,151,0.15); }
     #v-sens-row { position: absolute; left: 30px; right: 30px; bottom: 38px; display: flex; flex-direction: column; gap: 10px; align-items: stretch;
       padding-top: 24px; border-top: 1px solid rgba(167,160,219,0.22); }
     #v-sens-row label { color: #c7c4ed; font-size: 12px; letter-spacing: 2px; text-align: left; }
@@ -440,6 +442,11 @@
       <div id="v-team" class="v-team">
         <button type="button" class="v-team-b" data-team="attacker">ATTACKER</button>
         <button type="button" class="v-team-b" data-team="defender">DEFENDER</button>
+      </div>
+      <div class="v-control-label">CONTROL MODE</div>
+      <div id="v-control-mode" class="v-team">
+        <button type="button" class="v-team-b" data-control="desktop">COMPUTER</button>
+        <button type="button" class="v-team-b" data-control="mobile">MOBILE</button>
       </div>
       <button id="v-play" type="button">▶ START MATCH</button>
     </div>
