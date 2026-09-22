@@ -119,7 +119,7 @@ export class WeaponManager {
     const muzzle = melee ? null : eye.clone().addScaledVector(dir, 0.5).addScaledVector(right, 0.14).addScaledVector(up, -0.10);
 
     const pellets = shot.def.pellets || 1;
-    let hitAny = false, killedAny = false, headAny = false;
+    let hitAny = false, killedAny = false, headAny = false, damageTotal = 0;
     let endPoint = null;
     for (let i = 0; i < pellets; i++) {
       const res = this.hit.fireRay(eye, dir, shot.spread, shot.def, muzzle);
@@ -127,6 +127,7 @@ export class WeaponManager {
         : eye.clone().addScaledVector(dir, shot.def.range);
       if (res && res.target) {
         hitAny = true;
+        damageTotal += res.damage || 0;
         if (res.killed) killedAny = true;
         if (res.headshot) headAny = true;
         if (res.killed) {
@@ -137,7 +138,7 @@ export class WeaponManager {
     }
 
     if (!melee && muzzle && endPoint && this.onShot) this.onShot(muzzle, endPoint, shot.def.id);
-    this.onShotResult?.({ hit: hitAny, headshot: headAny, killed: killedAny, weapon: shot.def.id });
+    this.onShotResult?.({ hit: hitAny, headshot: headAny, killed: killedAny, damage: damageTotal, weapon: shot.def.id });
 
     if (shot.def.scope && this.aiming) this._forceUnscope = true;
 

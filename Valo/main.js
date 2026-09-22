@@ -4,21 +4,21 @@ import { TouchControls } from './Input/TouchControls.js?v=mobile-abilities';
 import { isPerfMode, setPerfMode } from './perf.js';
 import { FPSCamera } from './Camera/FPSCamera.js';
 import { MovementController } from './Movement/MovementController.js';
-import { WeaponManager } from './Weapons/WeaponManager.js?v=training-range';
+import { WeaponManager } from './Weapons/WeaponManager.js?v=range-static-dps';
 import { ViewModel } from './Weapons/ViewModel.js?v=knife-hit-fast-start';
 import { WeaponModelLoader } from './Weapons/WeaponModelLoader.js';
 import { HitSystem } from './Combat/HitSystem.js';
 import { Target } from './Combat/Target.js';
-import { Bots } from './Combat/Bot.js?v=training-range';
+import { Bots } from './Combat/Bot.js?v=range-static-dps';
 import { AbilitySystem } from './Abilities/AbilitySystem.js';
-import { HUD } from './UI/HUD.js?v=training-range';
+import { HUD } from './UI/HUD.js?v=range-static-dps';
 import { BuyMenu } from './UI/BuyMenu.js';
 import { Weapons, Armor } from './Weapons/WeaponData.js';
 import { Minimap } from './UI/Minimap.js?v=training-range';
 import { ESP } from './UI/ESP.js';
 import { AudioManager } from './Audio/AudioManager.js';
 import { buildArena } from './World/Arena.js';
-import { buildTrainingRange } from './World/TrainingRange.js';
+import { buildTrainingRange } from './World/TrainingRange.js?v=range-static-dps';
 import { setupEnvironment } from './World/Environment.js';
 import { buildRTX } from './Render/RTX.js';
 import { PlayerModel } from './World/PlayerModel.js';
@@ -92,9 +92,10 @@ class Game {
     this.rangeBots = new Bots(this.scene, rangeMap.colliders, rangeMap.botSpawns, 'easy', {
       practice: true, patrolRadius: 4.5,
     });
+    this.rangeBots.spawn(rangeMap.staticBotSpawn, 'STATIC BOT', { static: true });
     this.bots = this.homeBots;
     this.hud = new HUD(document.getElementById('hud'));
-    this._trainingStats = { shots: 0, hits: 0, headshots: 0 };
+    this._trainingStats = { shots: 0, hits: 0, headshots: 0, damage: 0, startedAt: null };
     this.hud.setTrainingReset(() => this._resetTrainingStats());
     this.hud.setTrainingStats(this._trainingStats);
 
@@ -1541,16 +1542,20 @@ class Game {
   }
 
   _resetTrainingStats() {
-    this._trainingStats = { shots: 0, hits: 0, headshots: 0 };
+    this._trainingStats = { shots: 0, hits: 0, headshots: 0, damage: 0, startedAt: null };
     this.hud?.setTrainingStats(this._trainingStats);
   }
 
   _registerTrainingShot(result) {
     if (this._mapMode !== 'range' || !result) return;
+    const now = performance.now();
+    if (this._trainingStats.startedAt == null) this._trainingStats.startedAt = now;
     this._trainingStats.shots++;
     if (result.hit) this._trainingStats.hits++;
     if (result.headshot) this._trainingStats.headshots++;
-    this.hud?.setTrainingStats(this._trainingStats);
+    this._trainingStats.damage += result.damage || 0;
+    const seconds = Math.max(0.1, (now - this._trainingStats.startedAt) / 1000);
+    this.hud?.setTrainingStats({ ...this._trainingStats, dps: this._trainingStats.damage / seconds });
   }
 
   _setControlMode(mode) {

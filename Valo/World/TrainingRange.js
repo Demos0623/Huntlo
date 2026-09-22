@@ -86,8 +86,10 @@ export function buildTrainingRange(scene) {
     new THREE.Vector3(111, 0, 8), new THREE.Vector3(123, 0, 1), new THREE.Vector3(135, 0, -7),
     new THREE.Vector3(147, 0, 3), new THREE.Vector3(159, 0, -11),
   ];
+  // A close, stationary target gives players a consistent baseline for aim and DPS practice.
+  const staticBotSpawn = new THREE.Vector3(135, 0, 12);
   return {
-    root, world, colliders, targets: [], areas, walls, covers, bounds: BOUNDS, botSpawns,
+    root, world, colliders, targets: [], areas, walls, covers, bounds: BOUNDS, botSpawns, staticBotSpawn,
     spawns: {
       attacker: { pos: spawn, yaw: 0 },
       defender: { pos: spawn.clone(), yaw: 0 },

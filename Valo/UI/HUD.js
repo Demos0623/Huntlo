@@ -31,6 +31,7 @@ export class HUD {
       <section id="v-training" hidden aria-label="Training range results">
         <div class="v-training-title">TRAINING RANGE</div>
         <div class="v-training-count"><span>SHOTS</span><b id="v-training-shots">0</b></div>
+        <div class="v-training-count"><span>DPS</span><b id="v-training-dps">0</b></div>
         <div class="v-training-metric">
           <div><span>ACCURACY</span><b id="v-training-accuracy">0%</b></div>
           <div class="v-training-track"><i id="v-training-accuracy-bar"></i></div>
@@ -147,10 +148,11 @@ export class HUD {
 
   setTrainingReset(handler) { this._trainingReset = handler; }
 
-  setTrainingStats({ shots = 0, hits = 0, headshots = 0 } = {}) {
+  setTrainingStats({ shots = 0, hits = 0, headshots = 0, dps = 0 } = {}) {
     const accuracy = shots ? Math.round(hits * 100 / shots) : 0;
     const hsRate = hits ? Math.round(headshots * 100 / hits) : 0;
     this.$('#v-training-shots').textContent = String(shots);
+    this.$('#v-training-dps').textContent = String(Math.round(dps));
     this.$('#v-training-accuracy').textContent = `${accuracy}%`;
     this.$('#v-training-hs').textContent = `${hsRate}%`;
     this.$('#v-training-accuracy-bar').style.width = `${accuracy}%`;

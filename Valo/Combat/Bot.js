@@ -25,6 +25,7 @@ export class Bot extends Target {
     this._reaction = 0;
     this._strafe = Math.random() < 0.5 ? 1 : -1;
     this.practice = !!opts.practice;
+    this.static = !!opts.static;
     this._patrolRadius = opts.patrolRadius ?? 7;
     this.setDifficulty(opts.diff || 'normal');
     this._fireCd = this._d.fireMin + Math.random() * (this._d.fireMax - this._d.fireMin);
@@ -59,6 +60,10 @@ export class Bot extends Target {
 
   _respawn() {
     super._respawn();
+    if (this.static) {
+      this.mesh.position.set(this._home.x, this._home.y + 1.11, this._home.z);
+      return;
+    }
     // Return home and reset AI.
     const a = Math.random() * Math.PI * 2, r = Math.random() * 6;
     this.mesh.position.set(this._home.x + Math.cos(a) * r, this._home.y + 1.11, this._home.z + Math.sin(a) * r);
@@ -71,7 +76,7 @@ export class Bot extends Target {
     if (this._downTimer > 0) return;   // dead
 
     // Range dummies move continuously, but never acquire or damage the player.
-    if (this.practice) { this._patrol(dt, ctx); return; }
+    if (this.practice) { if (!this.static) this._patrol(dt, ctx); return; }
 
     const eye = this._eye(ctx._be || (ctx._be = new THREE.Vector3()));
     const toP = (ctx._bt || (ctx._bt = new THREE.Vector3())).copy(ctx.playerEye).sub(eye);
