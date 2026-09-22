@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { InputManager } from './Input/InputManager.js';
-import { TouchControls } from './Input/TouchControls.js?v=joystick-size';
+import { TouchControls } from './Input/TouchControls.js?v=per-control-size';
 import { isPerfMode, setPerfMode } from './perf.js';
 import { FPSCamera } from './Camera/FPSCamera.js';
 import { MovementController } from './Movement/MovementController.js';
