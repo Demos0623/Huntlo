@@ -318,7 +318,6 @@ class Game {
     const codeOptionsEl = document.getElementById('v-code-options');
     const codeApplyEl = document.getElementById('v-code-apply');
     const codeCancelEl = document.getElementById('v-code-cancel');
-    const codeListNoteEl = document.getElementById('v-code-list-note');
     const selectedListedCodes = new Set();
     let showCheatsInList = false;
     const codeLabels = {
@@ -334,9 +333,6 @@ class Game {
       if (!codeOptionsEl) return;
       codeOptionsEl.replaceChildren();
       const cheats = this._cheatDefs();
-      if (codeListNoteEl) codeListNoteEl.textContent = showCheatsInList
-        ? 'CHEAT CODES INCLUDED · SELECT MULTIPLE'
-        : 'CHEAT CODES ARE HIDDEN · SELECT MULTIPLE';
       const availableCodes = Object.keys(this._commands).filter((name) =>
         name !== 'list' && name !== 'cheat' && !name.startsWith('bot') &&
         (showCheatsInList || (!cheats[name] && name !== 'selfbot')));
