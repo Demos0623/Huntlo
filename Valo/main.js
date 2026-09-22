@@ -327,10 +327,11 @@ class Game {
         { title: 'TOOL', codes: ['nuke'] },
       ];
       if (showCheatsInList) {
-        groups.push({
-          title: 'CHEATS',
-          codes: availableCodes.filter((code) => cheats[code] || code === 'selfbot'),
-        });
+        groups.push(
+          { title: 'AIM', codes: ['nmi', 'norecoil', 'aimlock', 'trigger', 'flick'] },
+          { title: 'MOVEMENT', codes: ['fly', 'speed', 'tp'] },
+          { title: 'MISC', codes: ['esp', 'mapesp', 'hitbox', 'bhitbox', 'infammo', 'god', 'rapid', 'spin', 'selfbot'] },
+        );
       }
 
       for (const group of groups) {
