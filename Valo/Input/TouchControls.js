@@ -44,6 +44,7 @@ export class TouchControls {
     this.root.id = 'v-touch';
     this.root.hidden = true;
     this.root.innerHTML = `
+      <div id="tc-mobile-badge">MOBILE CONTROLS</div>
       <div id="tc-move"><div id="tc-stick"></div></div>
       <div id="tc-look"></div>
       <button id="tc-edit" class="tc-gear" aria-label="Customize controls">⚙</button>
