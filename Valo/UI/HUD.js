@@ -107,9 +107,14 @@ export class HUD {
     const networkButton = this.$('#v-network-toggle');
     networkButton.addEventListener('click', (e) => {
       e.stopPropagation();
-      const panel = this.$('#v-network-panel');
-      panel.hidden = !panel.hidden;
-      networkButton.setAttribute('aria-expanded', String(!panel.hidden));
+      this.toggleNetworkPanel();
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.key !== '_') return;
+      const active = document.activeElement;
+      if (active && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) return;
+      e.preventDefault();
+      this.toggleNetworkPanel();
     });
   }
 
@@ -151,6 +156,12 @@ export class HUD {
     el.textContent = `${fps} FPS · ${net}`;
     el.classList.toggle('v-net-bad', ping != null && (ping > 120 || jitter > 35));
     el.classList.toggle('v-net-warn', ping != null && !el.classList.contains('v-net-bad') && (ping > 60 || jitter > 15));
+  }
+
+  toggleNetworkPanel() {
+    const panel = this.$('#v-network-panel');
+    panel.hidden = !panel.hidden;
+    this.$('#v-network-toggle').setAttribute('aria-expanded', String(!panel.hidden));
   }
 
   setNetworkDetails({ connected, reconnecting, ping, jitter, loss, stateGaps, txRate, rxRate, buffered, reconnects, interpolation }) {
