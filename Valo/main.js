@@ -74,10 +74,6 @@ class Game {
     this.movement = new MovementController(map.world, this._spawns[team].pos.clone());
     this.input = new InputManager(canvas);
 
-    // Build touch controls once and keep them hidden for desktop mode. This
-    // lets the menu choice take effect immediately without reloading the map.
-    this.touch = new TouchControls(document.getElementById('hud'));
-    if (this.touch) this.input.attachTouch(this.touch);
     this.audio = new AudioManager();
     this.hitSystem = new HitSystem(this.scene, map.colliders);
 
@@ -89,6 +85,11 @@ class Game {
     try { const d = localStorage.getItem('valo_botdiff'); if (d === 'easy' || d === 'normal' || d === 'hard') botDiff = d; } catch (_) { /* ignore */ }
     this.bots = new Bots(this.scene, this.hitSystem.colliders, [], botDiff);
     this.hud = new HUD(document.getElementById('hud'));
+
+    // Build touch controls after the HUD: HUD initializes its own markup, so
+    // creating the overlay first would remove it before a mobile match starts.
+    this.touch = new TouchControls(document.getElementById('hud'));
+    if (this.touch) this.input.attachTouch(this.touch);
 
     this.weapons = new WeaponManager({
       camera: this.camera,
