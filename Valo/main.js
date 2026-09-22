@@ -346,7 +346,8 @@ class Game {
         : [
           { title: 'COSMETIC', codes: ['muscle', 'rainbow'] },
           { title: 'GAME', codes: ['health'] },
-          { title: 'TOOL', codes: ['nuke', 'range', 'home'] },
+          { title: 'TOOL', codes: ['nuke'] },
+          { title: 'PLACES', codes: ['home', 'range'] },
         ];
 
       for (const group of groups) {
