@@ -176,7 +176,7 @@ export class TouchControls {
     window.addEventListener('pointerup', onUp);
   }
 
-  _enterEdit() { this.editMode = true; this.root.classList.add('tc-editing'); this.$('#tc-editbar').hidden = false; }
+  _enterEdit() { this.editMode = true; this._selectControl(null); this.root.classList.add('tc-editing'); this.$('#tc-editbar').hidden = false; }
   _exitEdit() { this.editMode = false; this._selectControl(null); this.root.classList.remove('tc-editing'); this.$('#tc-editbar').hidden = true; }
 
   _applyLayout(layout) {
@@ -237,11 +237,18 @@ export class TouchControls {
     control.style.setProperty('--tc-control-scale', String(v));
   }
   _selectControl(control) {
+    if (!control) {
+      this.selectedControl?.classList.remove('tc-control-selected');
+      this.selectedControl = null;
+      const size = this.$('#tc-size');
+      size.disabled = true;
+      size.value = '100';
+      return;
+    }
     if (this.selectedControl === control) return;
     this.selectedControl?.classList.remove('tc-control-selected');
     this.selectedControl = control;
     const size = this.$('#tc-size');
-    if (!control) { size.disabled = true; size.value = '100'; return; }
     control.classList.add('tc-control-selected');
     size.disabled = false;
     size.value = String(Math.round(this._getControlScale(control) * 100));
