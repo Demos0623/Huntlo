@@ -319,7 +319,8 @@ class Game {
         ? 'CHEAT CODES INCLUDED · SELECT MULTIPLE'
         : 'CHEAT CODES ARE HIDDEN · SELECT MULTIPLE';
       for (const code of Object.keys(this._commands).filter((name) =>
-        name !== 'list' && name !== 'cheat' && (showCheatsInList || (!cheats[name] && name !== 'selfbot')))) {
+        name !== 'list' && name !== 'cheat' && !name.startsWith('bot') &&
+        (showCheatsInList || (!cheats[name] && name !== 'selfbot')))) {
         const option = document.createElement('button');
         option.type = 'button'; option.className = 'v-code-option'; option.dataset.code = code;
         option.textContent = codeLabels[code] || code.toUpperCase();
