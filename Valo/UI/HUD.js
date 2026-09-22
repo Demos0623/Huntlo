@@ -111,8 +111,10 @@ export class HUD {
     });
     window.addEventListener('keydown', (e) => {
       // Support both the typed character and the physical Shift+- key, which
-      // browsers report differently on some keyboard layouts.
-      if (e.repeat || (e.key !== '_' && !(e.code === 'Minus' && e.shiftKey))) return;
+      // browsers report differently on some keyboard layouts. N is an
+      // unbound in-game fallback for layouts where the underscore is awkward.
+      const networkShortcut = e.key === '_' || (e.code === 'Minus' && e.shiftKey) || e.code === 'KeyN';
+      if (e.repeat || !networkShortcut) return;
       const active = document.activeElement;
       if (active && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) return;
       e.preventDefault();
