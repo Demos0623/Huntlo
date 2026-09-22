@@ -299,17 +299,27 @@ class Game {
     const codeOptionsEl = document.getElementById('v-code-options');
     const codeApplyEl = document.getElementById('v-code-apply');
     const codeCancelEl = document.getElementById('v-code-cancel');
+    const codeListNoteEl = document.getElementById('v-code-list-note');
     const selectedListedCodes = new Set();
+    let showCheatsInList = false;
     const codeLabels = {
       botez: 'BOTS · EASY', botmid: 'BOTS · NORMAL', bothard: 'BOTS · HARD',
       selfbot: 'SELF-BOT', muscle: 'MUSCLE', rainbow: 'RAINBOW', health: 'HEALTH',
       boton: 'BOTS ON', botoff: 'BOTS OFF', nuke: 'NUKE',
+      infammo: 'INFINITE AMMO', nmi: 'NO MOVE INACCURACY', norecoil: 'NO RECOIL', esp: 'ESP',
+      aimlock: 'AIMLOCK', trigger: 'TRIGGERBOT', mapesp: 'MAP ESP', hitbox: 'HITBOX VIEW',
+      bhitbox: 'BIG HITBOX', god: 'GOD MODE', spin: 'SPINBOT', fly: 'FLY', speed: 'SPEED',
+      rapid: 'RAPID FIRE', tp: 'TELEPORT', flick: 'FLICK',
     };
     const paintCodeList = () => {
       if (!codeOptionsEl) return;
       codeOptionsEl.replaceChildren();
       const cheats = this._cheatDefs();
-      for (const code of Object.keys(this._commands).filter((name) => !cheats[name] && name !== 'list' && name !== 'selfbot')) {
+      if (codeListNoteEl) codeListNoteEl.textContent = showCheatsInList
+        ? 'CHEAT CODES INCLUDED · SELECT MULTIPLE'
+        : 'CHEAT CODES ARE HIDDEN · SELECT MULTIPLE';
+      for (const code of Object.keys(this._commands).filter((name) =>
+        name !== 'list' && name !== 'cheat' && (showCheatsInList || (!cheats[name] && name !== 'selfbot')))) {
         const option = document.createElement('button');
         option.type = 'button'; option.className = 'v-code-option'; option.dataset.code = code;
         option.textContent = codeLabels[code] || code.toUpperCase();
@@ -328,13 +338,15 @@ class Game {
       selectedListedCodes.clear();
       if (codeApplyEl) codeApplyEl.disabled = true;
     };
-    const openCodeList = () => {
+    const openCodeList = (includeCheats = false) => {
+      showCheatsInList = includeCheats;
       selectedListedCodes.clear();
       if (codeApplyEl) codeApplyEl.disabled = true;
       paintCodeList();
       if (codeListEl) codeListEl.hidden = false;
     };
-    this._commands.list = () => { openCodeList(); return 'CODE LIST OPEN'; };
+    this._commands.list = () => { openCodeList(false); return 'CODE LIST OPEN'; };
+    this._commands.cheat = () => { openCodeList(true); return 'CHEAT LIST OPEN'; };
     codeCancelEl?.addEventListener('click', closeCodeList);
     codeApplyEl?.addEventListener('click', () => {
       const results = [];
