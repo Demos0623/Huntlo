@@ -295,16 +295,70 @@ class Game {
     const cmdEl = document.getElementById('v-cmd');
     const cmdMsg = document.getElementById('v-cmd-msg');
     const consoleEl = document.getElementById('v-console');
+    const codeListEl = document.getElementById('v-code-list');
+    const codeOptionsEl = document.getElementById('v-code-options');
+    const codeApplyEl = document.getElementById('v-code-apply');
+    const codeCancelEl = document.getElementById('v-code-cancel');
+    let selectedListedCode = null;
+    const codeLabels = {
+      botez: 'BOTS · EASY', botmid: 'BOTS · NORMAL', bothard: 'BOTS · HARD',
+      selfbot: 'SELF-BOT', muscle: 'MUSCLE', rainbow: 'RAINBOW', health: 'HEALTH',
+      boton: 'BOTS ON', botoff: 'BOTS OFF', nuke: 'NUKE',
+    };
+    const paintCodeList = () => {
+      if (!codeOptionsEl) return;
+      codeOptionsEl.replaceChildren();
+      const cheats = this._cheatDefs();
+      for (const code of Object.keys(this._commands).filter((name) => !cheats[name] && name !== 'list')) {
+        const option = document.createElement('button');
+        option.type = 'button'; option.className = 'v-code-option'; option.dataset.code = code;
+        option.textContent = codeLabels[code] || code.toUpperCase();
+        option.classList.toggle('v-code-selected', code === selectedListedCode);
+        option.addEventListener('click', () => {
+          selectedListedCode = code;
+          paintCodeList();
+          if (codeApplyEl) codeApplyEl.disabled = false;
+        });
+        codeOptionsEl.appendChild(option);
+      }
+    };
+    const closeCodeList = () => {
+      if (codeListEl) codeListEl.hidden = true;
+      selectedListedCode = null;
+      if (codeApplyEl) codeApplyEl.disabled = true;
+    };
+    const openCodeList = () => {
+      selectedListedCode = null;
+      if (codeApplyEl) codeApplyEl.disabled = true;
+      paintCodeList();
+      if (codeListEl) codeListEl.hidden = false;
+    };
+    this._commands.list = () => { openCodeList(); return 'CODE LIST OPEN'; };
+    codeCancelEl?.addEventListener('click', closeCodeList);
+    codeApplyEl?.addEventListener('click', () => {
+      const fn = selectedListedCode && this._commands[selectedListedCode];
+      if (typeof fn !== 'function') return;
+      let out;
+      try { out = fn.call(this); } catch (_) { out = null; }
+      this.hud?._toast(out || 'OK');
+      closeCodeList();
+    });
     const closeConsole = () => {
       if (consoleEl) consoleEl.hidden = true;
       if (cmdEl) { cmdEl.value = ''; cmdEl.blur(); }
     };
     this._closeConsole = closeConsole;
     window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && codeListEl && !codeListEl.hidden) {
+        e.preventDefault();
+        closeCodeList();
+        return;
+      }
       if (e.key !== '/' || e.repeat) return;
       const active = document.activeElement;
       if (active && active !== document.body && active !== document.documentElement) return;
       e.preventDefault();
+      closeCodeList();
       if (consoleEl) consoleEl.hidden = false;
       cmdEl?.focus();
     });

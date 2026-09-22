@@ -399,6 +399,20 @@
       font-size: 11px; letter-spacing: 1px; padding-right: 2px; }
     #v-cmd-msg.err { color: #ff4d4d; }
     #v-cmd-msg.ok { color: var(--ok); }
+    #v-code-list { position: fixed; right: 18px; bottom: 74px; z-index: 22; width: min(320px, calc(100vw - 36px));
+      padding: 14px; border: 1px solid rgba(240,212,121,0.42); border-radius: 12px; background: rgba(8,11,16,0.94);
+      box-shadow: 0 14px 34px rgba(0,0,0,0.4); color: #dfe6ef; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+    #v-code-list[hidden] { display: none; }
+    .v-code-list-head { color: #f2d962; font-size: 12px; font-weight: 800; letter-spacing: 2px; }
+    .v-code-list-note { margin-top: 4px; color: #8491a2; font-size: 10px; letter-spacing: 0.8px; }
+    #v-code-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin: 12px 0; }
+    .v-code-option { min-height: 34px; padding: 7px; border: 1px solid #344050; border-radius: 7px; background: rgba(31,40,53,0.65);
+      color: #cdd8e7; font: 700 10px/1.2 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 0.6px; cursor: pointer; }
+    .v-code-option:hover, .v-code-option.v-code-selected { border-color: #f2d962; color: #fff2ac; background: rgba(184,137,38,0.23); }
+    .v-code-list-actions { display: flex; gap: 8px; }
+    .v-code-list-actions button { flex: 1; min-height: 34px; border-radius: 7px; border: 1px solid #394658; background: #1c2532;
+      color: #dce5f0; font: 800 10px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 1.2px; cursor: pointer; }
+    .v-code-list-actions #v-code-apply { border-color: #e2bd54; background: #c79b32; color: #17140a; }
 
     /* Each panel itself has a hand-drawn wave silhouette — not a straight
        rectangle with a decorative line placed on top. */
@@ -474,6 +488,15 @@
     <div id="v-cmd-msg"></div>
     <input id="v-cmd" type="text" maxlength="32" placeholder="&gt; enter code" autocomplete="off" spellcheck="false" />
   </div>
+  <section id="v-code-list" hidden aria-label="Code list">
+    <div class="v-code-list-head">CODE LIST</div>
+    <div class="v-code-list-note">CHEAT CODES ARE HIDDEN</div>
+    <div id="v-code-options"></div>
+    <div class="v-code-list-actions">
+      <button id="v-code-cancel" type="button">CANCEL</button>
+      <button id="v-code-apply" type="button" disabled>APPLY</button>
+    </div>
+  </section>
 
   <!-- Online multiplayer relay.
        Leave '' for local/LAN play (auto-connects to this host on :8080).
@@ -483,6 +506,6 @@
        ?relay=wss://your-relay to the page URL. -->
   <script>window.HUNTLO_RELAY_URL = 'wss://huntlo-relay.demoslin0623.workers.dev';</script>
 
-  <script type="module" src="./Valo/main.js?v=mobile-abilities"></script>
+  <script type="module" src="./Valo/main.js?v=code-list-menu"></script>
 </body>
 </html>
