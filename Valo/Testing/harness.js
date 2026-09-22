@@ -400,10 +400,10 @@ export function runTests() {
       classic: '26/78', ghost: '30/105', marker: '55/159', frenzy: '26/78', shorty: '12/24',
       stinger: '27/67', spectre: '26/78', bulldog: '35/115', guardian: '65/195',
       phantom: '39/156', vantage: '40/160', bucky: '22/44', judge: '17/34',
-      marshal: '101/202', outlaw: '140/238', operator: '150/255', ares: '30/72', odin: '38/95',
+      marshal: '101/202', outlaw: '140/238', operator: '150/255', ares: '20/72', odin: '30/95',
     };
     const wrong = Object.keys(expect).filter((id) => dmg(id) !== expect[id]);
-    check('Valorant damage values applied', wrong.length === 0,
+    check('configured weapon damage values applied', wrong.length === 0,
       wrong.length ? wrong.map((id) => `${id}:${dmg(id)}≠${expect[id]}`).join(' ') : 'all match');
     check('shotgun pellet counts (Bucky 15, Judge 12)', Weapons.bucky.pellets === 15 && Weapons.judge.pellets === 12,
       `bucky=${Weapons.bucky.pellets} judge=${Weapons.judge.pellets}`);

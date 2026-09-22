@@ -71,8 +71,8 @@ export const Weapons = {
   outlaw:   mk('sniper', { id: 'outlaw',   name: 'Outlaw',   price: 2400, rpm: 165, magazine: 2, reserve: 8,  damage: 140, headshotDamage: 238, reloadTime: 2.25, aimFov: 40, minDamageFrac: 1.0, scopeStyle: 'mildot' }),
   operator: mk('sniper', { id: 'operator', name: 'Operator', price: 4700, rpm: 36, magazine: 5, reserve: 10, damage: 150, headshotDamage: 255, reloadTime: 3.7, aimFov: 30, minDamageFrac: 1.0, scopeStyle: 'christmas' }),
 
-  ares:     mk('mg', { id: 'ares', name: 'Ares', price: 1600, rpm: 660, magazine: 50,  reserve: 100, damage: 30, headshotDamage: 72, minDamageFrac: 0.9 }),
-  odin:     mk('mg', { id: 'odin', name: 'Odin', price: 3200, rpm: 780, magazine: 100, reserve: 200, damage: 38, headshotDamage: 95, reloadTime: 5.0, minDamageFrac: 0.82 }),
+  ares:     mk('mg', { id: 'ares', name: 'Ares', price: 1600, rpm: 660, magazine: 50,  reserve: 100, damage: 20, headshotDamage: 72, minDamageFrac: 0.9 }),
+  odin:     mk('mg', { id: 'odin', name: 'Odin', price: 3200, rpm: 780, magazine: 100, reserve: 200, damage: 30, headshotDamage: 95, reloadTime: 5.0, minDamageFrac: 0.82 }),
 
   karambit: {
     id: 'karambit', name: 'Karambit', category: 'melee', slot: 'melee', melee: true,

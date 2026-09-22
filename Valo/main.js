@@ -4,7 +4,7 @@ import { TouchControls } from './Input/TouchControls.js?v=mobile-abilities';
 import { isPerfMode, setPerfMode } from './perf.js';
 import { FPSCamera } from './Camera/FPSCamera.js';
 import { MovementController } from './Movement/MovementController.js';
-import { WeaponManager } from './Weapons/WeaponManager.js?v=range-static-dps';
+import { WeaponManager } from './Weapons/WeaponManager.js?v=mg-body-damage';
 import { ViewModel } from './Weapons/ViewModel.js?v=unique-reloads';
 import { WeaponModelLoader } from './Weapons/WeaponModelLoader.js';
 import { HitSystem } from './Combat/HitSystem.js';
