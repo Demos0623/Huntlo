@@ -299,7 +299,7 @@ class Game {
     const codeOptionsEl = document.getElementById('v-code-options');
     const codeApplyEl = document.getElementById('v-code-apply');
     const codeCancelEl = document.getElementById('v-code-cancel');
-    let selectedListedCode = null;
+    const selectedListedCodes = new Set();
     const codeLabels = {
       botez: 'BOTS · EASY', botmid: 'BOTS · NORMAL', bothard: 'BOTS · HARD',
       selfbot: 'SELF-BOT', muscle: 'MUSCLE', rainbow: 'RAINBOW', health: 'HEALTH',
@@ -313,22 +313,23 @@ class Game {
         const option = document.createElement('button');
         option.type = 'button'; option.className = 'v-code-option'; option.dataset.code = code;
         option.textContent = codeLabels[code] || code.toUpperCase();
-        option.classList.toggle('v-code-selected', code === selectedListedCode);
+        option.classList.toggle('v-code-selected', selectedListedCodes.has(code));
         option.addEventListener('click', () => {
-          selectedListedCode = code;
+          if (selectedListedCodes.has(code)) selectedListedCodes.delete(code);
+          else selectedListedCodes.add(code);
           paintCodeList();
-          if (codeApplyEl) codeApplyEl.disabled = false;
+          if (codeApplyEl) codeApplyEl.disabled = selectedListedCodes.size === 0;
         });
         codeOptionsEl.appendChild(option);
       }
     };
     const closeCodeList = () => {
       if (codeListEl) codeListEl.hidden = true;
-      selectedListedCode = null;
+      selectedListedCodes.clear();
       if (codeApplyEl) codeApplyEl.disabled = true;
     };
     const openCodeList = () => {
-      selectedListedCode = null;
+      selectedListedCodes.clear();
       if (codeApplyEl) codeApplyEl.disabled = true;
       paintCodeList();
       if (codeListEl) codeListEl.hidden = false;
@@ -336,11 +337,14 @@ class Game {
     this._commands.list = () => { openCodeList(); return 'CODE LIST OPEN'; };
     codeCancelEl?.addEventListener('click', closeCodeList);
     codeApplyEl?.addEventListener('click', () => {
-      const fn = selectedListedCode && this._commands[selectedListedCode];
-      if (typeof fn !== 'function') return;
-      let out;
-      try { out = fn.call(this); } catch (_) { out = null; }
-      this.hud?._toast(out || 'OK');
+      const results = [];
+      for (const code of selectedListedCodes) {
+        const fn = this._commands[code];
+        if (typeof fn !== 'function') continue;
+        try { results.push(fn.call(this) || code.toUpperCase()); } catch (_) { /* continue with other choices */ }
+      }
+      if (!results.length) return;
+      this.hud?._toast(results.length === 1 ? results[0] : `${results.length} CODES APPLIED`);
       closeCodeList();
     });
     const closeConsole = () => {
