@@ -512,7 +512,8 @@ export class ViewModel {
         }
         if (this._hitSpinT > 0) {
           const hitP = 1 - this._hitSpinT / this._hitSpinDur;
-          spin += hitP * hitP * hitP * Math.PI * 2;
+          // Negative local Z rotation reads clockwise from the player's view.
+          spin -= hitP * hitP * hitP * Math.PI * 2;
         }
         if (this._meleeSpinning) spin += this._meleeSpin;
         this._spinner.rotation.z = spin;
