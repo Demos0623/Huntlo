@@ -318,20 +318,46 @@ class Game {
       if (codeListNoteEl) codeListNoteEl.textContent = showCheatsInList
         ? 'CHEAT CODES INCLUDED · SELECT MULTIPLE'
         : 'CHEAT CODES ARE HIDDEN · SELECT MULTIPLE';
-      for (const code of Object.keys(this._commands).filter((name) =>
+      const availableCodes = Object.keys(this._commands).filter((name) =>
         name !== 'list' && name !== 'cheat' && !name.startsWith('bot') &&
-        (showCheatsInList || (!cheats[name] && name !== 'selfbot')))) {
-        const option = document.createElement('button');
-        option.type = 'button'; option.className = 'v-code-option'; option.dataset.code = code;
-        option.textContent = codeLabels[code] || code.toUpperCase();
-        option.classList.toggle('v-code-selected', selectedListedCodes.has(code));
-        option.addEventListener('click', () => {
-          if (selectedListedCodes.has(code)) selectedListedCodes.delete(code);
-          else selectedListedCodes.add(code);
-          paintCodeList();
-          if (codeApplyEl) codeApplyEl.disabled = selectedListedCodes.size === 0;
+        (showCheatsInList || (!cheats[name] && name !== 'selfbot')));
+      const groups = [
+        { title: 'COSMETIC', codes: ['muscle', 'rainbow'] },
+        { title: 'GAME', codes: ['health'] },
+        { title: 'TOOL', codes: ['nuke'] },
+      ];
+      if (showCheatsInList) {
+        groups.push({
+          title: 'CHEATS',
+          codes: availableCodes.filter((code) => cheats[code] || code === 'selfbot'),
         });
-        codeOptionsEl.appendChild(option);
+      }
+
+      for (const group of groups) {
+        const codes = group.codes.filter((code) => availableCodes.includes(code));
+        if (!codes.length) continue;
+        const section = document.createElement('section');
+        section.className = 'v-code-group';
+        const heading = document.createElement('div');
+        heading.className = 'v-code-group-title';
+        heading.textContent = group.title;
+        const options = document.createElement('div');
+        options.className = 'v-code-group-options';
+        for (const code of codes) {
+          const option = document.createElement('button');
+          option.type = 'button'; option.className = 'v-code-option'; option.dataset.code = code;
+          option.textContent = codeLabels[code] || code.toUpperCase();
+          option.classList.toggle('v-code-selected', selectedListedCodes.has(code));
+          option.addEventListener('click', () => {
+            if (selectedListedCodes.has(code)) selectedListedCodes.delete(code);
+            else selectedListedCodes.add(code);
+            paintCodeList();
+            if (codeApplyEl) codeApplyEl.disabled = selectedListedCodes.size === 0;
+          });
+          options.appendChild(option);
+        }
+        section.append(heading, options);
+        codeOptionsEl.appendChild(section);
       }
     };
     const closeCodeList = () => {

@@ -405,7 +405,9 @@
     #v-code-list[hidden] { display: none; }
     .v-code-list-head { color: #f2d962; font-size: 12px; font-weight: 800; letter-spacing: 2px; }
     .v-code-list-note { margin-top: 4px; color: #8491a2; font-size: 10px; letter-spacing: 0.8px; }
-    #v-code-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin: 12px 0; }
+    #v-code-options { display: flex; flex-direction: column; gap: 10px; max-height: min(55vh, 430px); margin: 12px 0; overflow-y: auto; padding-right: 2px; }
+    .v-code-group-title { margin-bottom: 5px; color: #8fe3c8; font-size: 10px; font-weight: 800; letter-spacing: 1.5px; }
+    .v-code-group-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
     .v-code-option { min-height: 34px; padding: 7px; border: 1px solid #344050; border-radius: 7px; background: rgba(31,40,53,0.65);
       color: #cdd8e7; font: 700 10px/1.2 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 0.6px; cursor: pointer; }
     .v-code-option:hover, .v-code-option.v-code-selected { border-color: #f2d962; color: #fff2ac; background: rgba(184,137,38,0.23); }
@@ -506,6 +508,6 @@
        ?relay=wss://your-relay to the page URL. -->
   <script>window.HUNTLO_RELAY_URL = 'wss://huntlo-relay.demoslin0623.workers.dev';</script>
 
-  <script type="module" src="./Valo/main.js?v=hide-bot-list"></script>
+  <script type="module" src="./Valo/main.js?v=grouped-code-list"></script>
 </body>
 </html>
