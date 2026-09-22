@@ -28,6 +28,19 @@ export class HUD {
           <span>RECONNECTS</span><b id="v-network-reconnects">0</b>
         </div>
       </section>
+      <section id="v-training" hidden aria-label="Training range results">
+        <div class="v-training-title">TRAINING RANGE</div>
+        <div class="v-training-count"><span>SHOTS</span><b id="v-training-shots">0</b></div>
+        <div class="v-training-metric">
+          <div><span>ACCURACY</span><b id="v-training-accuracy">0%</b></div>
+          <div class="v-training-track"><i id="v-training-accuracy-bar"></i></div>
+        </div>
+        <div class="v-training-metric">
+          <div><span>HEADSHOT RATE</span><b id="v-training-hs">0%</b></div>
+          <div class="v-training-track"><i id="v-training-hs-bar"></i></div>
+        </div>
+        <button id="v-training-reset" type="button">RESET STATS</button>
+      </section>
       <div id="v-scoreboard" hidden>
         <div class="sb-title">SCOREBOARD</div>
         <div class="sb-head"><span>PLAYER</span><span>K</span><span>D</span></div>
@@ -120,10 +133,28 @@ export class HUD {
       e.preventDefault();
       this.toggleNetworkPanel();
     });
+    this.$('#v-training-reset').addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._trainingReset?.();
+    });
   }
 
   setHealth(hp) {
     this.$('#v-health .v-num').textContent = Math.max(0, Math.round(hp));
+  }
+
+  setTrainingVisible(on) { this.$('#v-training').hidden = !on; }
+
+  setTrainingReset(handler) { this._trainingReset = handler; }
+
+  setTrainingStats({ shots = 0, hits = 0, headshots = 0 } = {}) {
+    const accuracy = shots ? Math.round(hits * 100 / shots) : 0;
+    const hsRate = hits ? Math.round(headshots * 100 / hits) : 0;
+    this.$('#v-training-shots').textContent = String(shots);
+    this.$('#v-training-accuracy').textContent = `${accuracy}%`;
+    this.$('#v-training-hs').textContent = `${hsRate}%`;
+    this.$('#v-training-accuracy-bar').style.width = `${accuracy}%`;
+    this.$('#v-training-hs-bar').style.width = `${hsRate}%`;
   }
 
   showDamage(intensity = 1) {

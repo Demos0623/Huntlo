@@ -24,6 +24,8 @@ export class Bot extends Target {
     this._aggro = 0;                 // seconds of remaining alertness
     this._reaction = 0;
     this._strafe = Math.random() < 0.5 ? 1 : -1;
+    this.practice = !!opts.practice;
+    this._patrolRadius = opts.patrolRadius ?? 7;
     this.setDifficulty(opts.diff || 'normal');
     this._fireCd = this._d.fireMin + Math.random() * (this._d.fireMax - this._d.fireMin);
     this._name = this._makeName(opts.label || 'BOT');
@@ -67,6 +69,9 @@ export class Bot extends Target {
   update(dt, ctx) {
     super.update(dt);                 // flash + death timer + respawn
     if (this._downTimer > 0) return;   // dead
+
+    // Range dummies move continuously, but never acquire or damage the player.
+    if (this.practice) { this._patrol(dt, ctx); return; }
 
     const eye = this._eye(ctx._be || (ctx._be = new THREE.Vector3()));
     const toP = (ctx._bt || (ctx._bt = new THREE.Vector3())).copy(ctx.playerEye).sub(eye);
@@ -134,7 +139,7 @@ export class Bot extends Target {
     this._repick -= dt;
     const dx = this._wander.x - this.mesh.position.x, dz = this._wander.z - this.mesh.position.z;
     if (Math.hypot(dx, dz) < 0.6 || this._repick <= 0) {
-      const a = Math.random() * Math.PI * 2, r = 3 + Math.random() * 7;
+      const a = Math.random() * Math.PI * 2, r = 1.5 + Math.random() * this._patrolRadius;
       this._wander.set(this._home.x + Math.cos(a) * r, this._home.y, this._home.z + Math.sin(a) * r);
       this._repick = 3 + Math.random() * 3;
       return;
@@ -162,17 +167,21 @@ export class Bot extends Target {
 }
 
 export class Bots {
-  constructor(scene, colliders, spawns, diff = 'normal') {
+  constructor(scene, colliders, spawns, diff = 'normal', opts = {}) {
     this.scene = scene;
     this.colliders = colliders;
     this.diff = diff;
+    this.opts = opts;
     this.list = [];
     spawns.forEach((pos, i) => this.spawn(pos, 'BOT ' + (i + 1)));
   }
 
   // Spawn one more bot at `pos` (uses the current difficulty).
-  spawn(pos, label) {
-    const b = new Bot(this.scene, pos, { label: label || ('BOT ' + (this.list.length + 1)), diff: this.diff });
+  spawn(pos, label, opts = {}) {
+    const b = new Bot(this.scene, pos, {
+      ...this.opts, ...opts,
+      label: label || ('BOT ' + (this.list.length + 1)), diff: this.diff,
+    });
     this.colliders.push(b.mesh);      // hit parts are children -> recursive raycast finds them
     this.list.push(b);
     return b;

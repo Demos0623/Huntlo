@@ -3,7 +3,7 @@ import { Weapon, WeaponState } from './Weapon.js';
 import { Weapons, Loadout } from './WeaponData.js';
 
 export class WeaponManager {
-  constructor({ camera, hitSystem, audio, hud, getEyePosition, getMoveState, onShot }) {
+  constructor({ camera, hitSystem, audio, hud, getEyePosition, getMoveState, onShot, onShotResult }) {
     this.camera = camera;
     this.hit = hitSystem;
     this.audio = audio;
@@ -11,6 +11,7 @@ export class WeaponManager {
     this.getEyePosition = getEyePosition;
     this.getMoveState = getMoveState;
     this.onShot = onShot || null;
+    this.onShotResult = onShotResult || null;
 
     this.weapons = {
       primary: new Weapon(Weapons[Loadout.primary]),
@@ -136,6 +137,7 @@ export class WeaponManager {
     }
 
     if (!melee && muzzle && endPoint && this.onShot) this.onShot(muzzle, endPoint, shot.def.id);
+    this.onShotResult?.({ hit: hitAny, headshot: headAny, killed: killedAny, weapon: shot.def.id });
 
     if (shot.def.scope && this.aiming) this._forceUnscope = true;
 

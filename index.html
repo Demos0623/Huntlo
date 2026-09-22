@@ -311,6 +311,22 @@
     .v-network-grid { display: grid; grid-template-columns: 1fr auto; gap: 7px 10px; font-size: 10px; letter-spacing: 0.5px; }
     .v-network-grid span { color: #8d9baa; }.v-network-grid b { color: #edf6f8; text-align: right; font-weight: 700; }
 
+    /* Training range result panel */
+    #v-training { position: fixed; top: 46px; left: 12px; z-index: 18; width: 210px; padding: 12px;
+      border: 1px solid rgba(227,177,79,0.46); border-radius: 10px; background: rgba(8,12,18,0.92);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.34); color: #e8edf1; font-family: ui-monospace, Menlo, Consolas, monospace; }
+    #v-training[hidden] { display: none; }
+    .v-training-title { margin-bottom: 10px; color: #f4ca68; font-size: 12px; font-weight: 800; letter-spacing: 1.6px; }
+    .v-training-count, .v-training-metric > div:first-child { display: flex; justify-content: space-between; font-size: 10px; letter-spacing: 0.8px; }
+    .v-training-count { margin-bottom: 9px; color: #94a3b2; }.v-training-count b, .v-training-metric b { color: #f4f7f9; }
+    .v-training-metric { margin-top: 8px; color: #9baab8; }
+    .v-training-track { height: 6px; margin-top: 4px; overflow: hidden; border-radius: 4px; background: #26313b; }
+    .v-training-track i { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #e3b14f, #fff0ab); transition: width 120ms ease-out; }
+    #v-training-hs-bar { background: linear-gradient(90deg, #d56a58, #f5c66a); }
+    #v-training-reset { width: 100%; min-height: 30px; margin-top: 12px; border: 1px solid #75603a; border-radius: 6px; background: #2d281d;
+      color: #f7dfa0; font: 800 10px/1 ui-monospace, Menlo, Consolas, monospace; letter-spacing: 1px; cursor: pointer; }
+    #v-training-reset:hover { background: #4a3d24; }
+
     /* Scoreboard (hold Tab) */
     #v-scoreboard { position: fixed; top: 12%; left: 50%; transform: translateX(-50%); z-index: 16;
       width: min(460px, 80vw); background: rgba(10,14,20,0.9); border: 1px solid #2a3444;
@@ -508,6 +524,6 @@
        ?relay=wss://your-relay to the page URL. -->
   <script>window.HUNTLO_RELAY_URL = 'wss://huntlo-relay.demoslin0623.workers.dev';</script>
 
-  <script type="module" src="./Valo/main.js?v=organized-cheat-list"></script>
+  <script type="module" src="./Valo/main.js?v=training-range-v3"></script>
 </body>
 </html>

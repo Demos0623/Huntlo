@@ -5,25 +5,27 @@ const ZONE_FILL = { teal: '#667772', gray: '#77817f', mauve: '#726c68' };
 
 export class Minimap {
   constructor(root, { areas, walls, covers, bounds }) {
-    this.areas = areas;
-    this.walls = walls || [];
-    this.covers = covers || [];
-    this.b = bounds;
-
     this.wrap = document.createElement('div');
     this.wrap.id = 'v-minimap';
     this.canvas = document.createElement('canvas');
-    // Match the canvas aspect ratio to the *current* arena bounds. The old
-    // fixed 220×240 canvas was too wide for Sunline's 50×66 play space, so
-    // the map stopped short of the right edge of its black HUD frame.
+    this.wrap.appendChild(this.canvas);
+    root.appendChild(this.wrap);
+    this.ctx = this.canvas.getContext('2d');
+    this.setMap({ areas, walls, covers, bounds });
+  }
+
+  // Switch the tactical view with the playable map so the range never shows
+  // Sunline walls, and vice versa.
+  setMap({ areas, walls, covers, bounds }) {
+    this.areas = areas || [];
+    this.walls = walls || [];
+    this.covers = covers || [];
+    this.b = bounds;
+    // Match the canvas aspect ratio to the current map footprint.
     const pad = 10;
     const wW = this.b.maxX - this.b.minX, wD = this.b.maxZ - this.b.minZ;
     this.canvas.width = 220;
     this.canvas.height = Math.ceil((this.canvas.width - pad * 2) * (wD / wW) + pad * 2);
-    this.wrap.appendChild(this.canvas);
-    root.appendChild(this.wrap);
-    this.ctx = this.canvas.getContext('2d');
-
     const sx = (this.canvas.width - pad * 2) / wW;
     const sz = (this.canvas.height - pad * 2) / wD;
     this._s = Math.min(sx, sz);

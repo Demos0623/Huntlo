@@ -4,20 +4,21 @@ import { TouchControls } from './Input/TouchControls.js?v=mobile-abilities';
 import { isPerfMode, setPerfMode } from './perf.js';
 import { FPSCamera } from './Camera/FPSCamera.js';
 import { MovementController } from './Movement/MovementController.js';
-import { WeaponManager } from './Weapons/WeaponManager.js';
+import { WeaponManager } from './Weapons/WeaponManager.js?v=training-range';
 import { ViewModel } from './Weapons/ViewModel.js?v=knife-hit-fast-start';
 import { WeaponModelLoader } from './Weapons/WeaponModelLoader.js';
 import { HitSystem } from './Combat/HitSystem.js';
 import { Target } from './Combat/Target.js';
-import { Bots } from './Combat/Bot.js';
+import { Bots } from './Combat/Bot.js?v=training-range';
 import { AbilitySystem } from './Abilities/AbilitySystem.js';
-import { HUD } from './UI/HUD.js';
+import { HUD } from './UI/HUD.js?v=training-range';
 import { BuyMenu } from './UI/BuyMenu.js';
 import { Weapons, Armor } from './Weapons/WeaponData.js';
-import { Minimap } from './UI/Minimap.js';
+import { Minimap } from './UI/Minimap.js?v=training-range';
 import { ESP } from './UI/ESP.js';
 import { AudioManager } from './Audio/AudioManager.js';
 import { buildArena } from './World/Arena.js';
+import { buildTrainingRange } from './World/TrainingRange.js';
 import { setupEnvironment } from './World/Environment.js';
 import { buildRTX } from './Render/RTX.js';
 import { PlayerModel } from './World/PlayerModel.js';
@@ -58,6 +59,10 @@ class Game {
     this.env = setupEnvironment(this.scene, this.renderer);
 
     const map = buildArena(this.scene);
+    const rangeMap = buildTrainingRange(this.scene);
+    this._maps = { home: map, range: rangeMap };
+    this._mapMode = 'home';
+    this._activeMap = map;
     this._surfMats = map.materials || {};
     this._arena = { areas: map.areas, walls: map.walls, covers: map.covers, bounds: map.bounds };
     this.targets = map.targets;
@@ -83,8 +88,15 @@ class Game {
       ([ox, oz]) => new THREE.Vector3(dp.x + ox, 0, dp.z + oz));
     let botDiff = 'normal';
     try { const d = localStorage.getItem('valo_botdiff'); if (d === 'easy' || d === 'normal' || d === 'hard') botDiff = d; } catch (_) { /* ignore */ }
-    this.bots = new Bots(this.scene, this.hitSystem.colliders, [], botDiff);
+    this.homeBots = new Bots(this.scene, this.hitSystem.colliders, [], botDiff);
+    this.rangeBots = new Bots(this.scene, rangeMap.colliders, rangeMap.botSpawns, 'easy', {
+      practice: true, patrolRadius: 4.5,
+    });
+    this.bots = this.homeBots;
     this.hud = new HUD(document.getElementById('hud'));
+    this._trainingStats = { shots: 0, hits: 0, headshots: 0 };
+    this.hud.setTrainingReset(() => this._resetTrainingStats());
+    this.hud.setTrainingStats(this._trainingStats);
 
     // Build touch controls after the HUD: HUD initializes its own markup, so
     // creating the overlay first would remove it before a mobile match starts.
@@ -104,6 +116,7 @@ class Game {
           this.net.send({ t: 'shot', o: [muzzle.x, muzzle.y, muzzle.z], e: [end.x, end.y, end.z], wid: weaponId });
         }
       },
+      onShotResult: (result) => this._registerTrainingShot(result),
     });
 
     this.playerModel = new PlayerModel(this.scene);
@@ -143,8 +156,12 @@ class Game {
     // The imported arena is the source of truth for visible walls. Upgrade the
     // minimap from its startup layout once the GLB has finished loading.
     map.ready?.then(({ minimapWalls, minimapCovers }) => {
+      map._minimapWalls = minimapWalls;
+      map._minimapCovers = minimapCovers;
+      if (this._mapMode !== 'home') return;
       this.minimap.setWalls(minimapWalls);
       this.minimap.setCovers(minimapCovers);
+      this._refreshActiveMapColliders();
     });
 
     this.esp = new ESP(document.getElementById('hud'), this.camera.camera);
@@ -272,6 +289,8 @@ class Game {
     this._commands.botoff = () => { this.bots.clear(); return 'BOTS REMOVED'; };
     // "nuke" — drop a missile from the sky that explodes and wipes out all enemies.
     this._commands.nuke = () => { this._launchNuke(); return 'NUKE INBOUND'; };
+    this._commands.range = () => { this._setActiveMap('range'); return 'TRAINING RANGE'; };
+    this._commands.home = () => { this._setActiveMap('home'); return 'HOME MAP'; };
 
     window.addEventListener('keydown', (e) => {
       if (!(e.ctrlKey || e.metaKey) || (e.key !== 'p' && e.key !== 'P')) return;
@@ -305,7 +324,7 @@ class Game {
     const codeLabels = {
       botez: 'BOTS · EASY', botmid: 'BOTS · NORMAL', bothard: 'BOTS · HARD',
       selfbot: 'SELF-BOT', muscle: 'MUSCLE', rainbow: 'RAINBOW', health: 'HEALTH',
-      boton: 'BOTS ON', botoff: 'BOTS OFF', nuke: 'NUKE',
+      boton: 'BOTS ON', botoff: 'BOTS OFF', nuke: 'NUKE', range: 'TRAINING RANGE', home: 'HOME MAP',
       infammo: 'INFINITE AMMO', nmi: 'NO MOVE INACCURACY', norecoil: 'NO RECOIL', esp: 'ESP',
       aimlock: 'AIMLOCK', trigger: 'TRIGGERBOT', mapesp: 'MAP ESP', hitbox: 'HITBOX VIEW',
       bhitbox: 'BIG HITBOX', god: 'GOD MODE', spin: 'SPINBOT', fly: 'FLY', speed: 'SPEED',
@@ -324,7 +343,7 @@ class Game {
       const groups = [
         { title: 'COSMETIC', codes: ['muscle', 'rainbow'] },
         { title: 'GAME', codes: ['health'] },
-        { title: 'TOOL', codes: ['nuke'] },
+        { title: 'TOOL', codes: ['nuke', 'range', 'home'] },
       ];
       if (showCheatsInList) {
         groups.push(
@@ -1489,6 +1508,54 @@ class Game {
     this.camera.yaw = sp.yaw; this.camera.pitch = 0;
 
     this.remotePlayers?.setMyTeam(team);
+  }
+
+  _refreshActiveMapColliders() {
+    const map = this._activeMap;
+    if (!map) return;
+    this.hitSystem.setColliders(map.colliders);
+    this.occluders = map.colliders.filter((c) => !(c.userData && c.userData.target));
+  }
+
+  _setActiveMap(mode) {
+    const map = this._maps?.[mode];
+    if (!map || this._mapMode === mode) return;
+    this._mapMode = mode;
+    this._activeMap = map;
+    this._arena = { areas: map.areas, walls: map.walls, covers: map.covers, bounds: map.bounds };
+    this._surfMats = map.materials || {};
+    this.targets = map.targets || [];
+    this._spawns = map.spawns;
+    this.bots = mode === 'range' ? this.rangeBots : this.homeBots;
+    this.movement.world = map.world;
+    this.movement.velocity.set(0, 0, 0);
+    this.movement.position.copy(map.spawns[this._team]?.pos || map.spawns.attacker.pos);
+    this.camera.yaw = map.spawns[this._team]?.yaw ?? map.spawns.attacker.yaw;
+    this.camera.pitch = 0;
+    this._refreshActiveMapColliders();
+    this.minimap?.setMap({
+      ...map,
+      walls: map._minimapWalls || map.walls,
+      covers: map._minimapCovers || map.covers,
+    });
+    this.weapons.refillAll();
+    this.health = 150;
+    this.hud.setHealth(this.health);
+    this.hud.setTrainingVisible(mode === 'range');
+    if (mode === 'range') this._resetTrainingStats();
+  }
+
+  _resetTrainingStats() {
+    this._trainingStats = { shots: 0, hits: 0, headshots: 0 };
+    this.hud?.setTrainingStats(this._trainingStats);
+  }
+
+  _registerTrainingShot(result) {
+    if (this._mapMode !== 'range' || !result) return;
+    this._trainingStats.shots++;
+    if (result.hit) this._trainingStats.hits++;
+    if (result.headshot) this._trainingStats.headshots++;
+    this.hud?.setTrainingStats(this._trainingStats);
   }
 
   _setControlMode(mode) {
