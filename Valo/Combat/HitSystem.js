@@ -135,14 +135,29 @@ export class HitSystem {
   }
 
   _spawnImpact(point, normal, isTarget) {
+    const color = isTarget ? 0xff5a5a : 0xbfe9ff;
     const mat = new THREE.MeshBasicMaterial({
-      color: isTarget ? 0xff5a5a : 0xbfe9ff, transparent: true, opacity: 0.95,
+      color, transparent: true, opacity: 0.95,
     });
-    const dot = new THREE.Mesh(new THREE.SphereGeometry(isTarget ? 0.06 : 0.045, 8, 6), mat);
+    const dot = new THREE.Mesh(new THREE.SphereGeometry(isTarget ? 0.075 : 0.06, 8, 6), mat);
     dot.position.copy(point);
     if (normal) dot.position.addScaledVector(normal, 0.01);
     this._effectRoot.add(dot);
     this._effects.push({ obj: dot, mat, life: 0.35, max: 0.35, kind: 'impact' });
+
+    const ringMat = new THREE.MeshBasicMaterial({
+      color, transparent: true, opacity: isTarget ? 0.7 : 0.9,
+      depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
+    });
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.055, 0.085, 14), ringMat);
+    ring.position.copy(point);
+    if (normal) {
+      const n = normal.clone().normalize();
+      ring.position.addScaledVector(n, 0.014);
+      ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), n);
+    }
+    this._effectRoot.add(ring);
+    this._effects.push({ obj: ring, mat: ringMat, life: 0.22, max: 0.22, kind: 'impactRing' });
   }
 
   // A headshot gets a quick gold-white burst distinct from the regular red
@@ -207,6 +222,10 @@ export class HitSystem {
       const e = this._effects[i];
       e.life -= dt;
       const t = Math.max(0, e.life / e.max);
+      if (e.kind === 'impactRing') {
+        e.obj.scale.setScalar(1 + (1 - t) * 3.2);
+        e.mat.opacity = t * 0.85;
+      }
       if (e.kind === 'headSpark') {
         e.obj.scale.setScalar(1 + (1 - t) * 0.8);
         e.mats[0].opacity = t;

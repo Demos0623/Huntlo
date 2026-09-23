@@ -35,10 +35,26 @@ export class TouchControls {
   wasPressed(action) { return this.editMode ? false : this._pressed.has(action); }
   consumeLook() {
     if (this.editMode) { this._look.dx = 0; this._look.dy = 0; return { dx: 0, dy: 0 }; }
-    const d = { dx: this._look.dx, dy: this._look.dy }; this._look.dx = 0; this._look.dy = 0; return d;
+    // Consume most of the gesture immediately and retain a short decaying tail.
+    // This removes event-rate jitter without making quick flicks feel delayed.
+    const d = {
+      dx: Math.max(-90, Math.min(90, this._look.dx * 0.72)),
+      dy: Math.max(-90, Math.min(90, this._look.dy * 0.72)),
+    };
+    this._look.dx -= d.dx; this._look.dy -= d.dy;
+    if (Math.abs(this._look.dx) < 0.01) this._look.dx = 0;
+    if (Math.abs(this._look.dy) < 0.01) this._look.dy = 0;
+    return d;
   }
   endFrame() { this._pressed.clear(); }
-  setVisible(v) { this.root.hidden = !v; }
+  setVisible(v) {
+    this.root.hidden = !v;
+    this.root.parentElement?.classList.toggle('v-touch-active', !!v);
+    if (!v) {
+      this._look.dx = this._look.dy = 0;
+      this._move.f = this._move.b = this._move.l = this._move.r = false;
+    }
+  }
 
   _build(root) {
     this.root = document.createElement('div');
@@ -114,9 +130,12 @@ export class TouchControls {
       const radius = R * this._getControlScale(stick);
       const len = Math.hypot(dx, dy) || 1, cl = Math.min(len, radius);
       stick.style.transform = `translate(${(dx / len) * cl}px, ${(dy / len) * cl}px)`;
-      const fx = dx / radius, fy = dy / radius, dead = 0.35;
-      this._move.r = fx > dead; this._move.l = fx < -dead;
-      this._move.b = fy > dead; this._move.f = fy < -dead;
+      const fx = dx / radius, fy = dy / radius;
+      const on = 0.34, off = 0.22;
+      this._move.r = fx > (this._move.r ? off : on);
+      this._move.l = fx < -(this._move.l ? off : on);
+      this._move.b = fy > (this._move.b ? off : on);
+      this._move.f = fy < -(this._move.f ? off : on);
     };
     const reset = () => { stick.style.transform = 'translate(0,0)'; this._move.f = this._move.b = this._move.l = this._move.r = false; };
     moveZone.addEventListener('touchstart', (e) => { if (this.editMode) return; e.preventDefault(); const t = e.changedTouches[0]; moveId = t.identifier; baseX = t.clientX; baseY = t.clientY; }, { passive: false });
@@ -127,7 +146,7 @@ export class TouchControls {
 
     let lookId = null, lastX = 0, lastY = 0;
     lookZone.addEventListener('touchstart', (e) => { if (this.editMode || lookId !== null) return; e.preventDefault(); const t = e.changedTouches[0]; lookId = t.identifier; lastX = t.clientX; lastY = t.clientY; }, { passive: false });
-    lookZone.addEventListener('touchmove', (e) => { if (this.editMode) return; e.preventDefault(); for (const t of e.changedTouches) if (t.identifier === lookId) { this._look.dx += (t.clientX - lastX) * this.lookFactor; this._look.dy += (t.clientY - lastY) * this.lookFactor; lastX = t.clientX; lastY = t.clientY; } }, { passive: false });
+    lookZone.addEventListener('touchmove', (e) => { if (this.editMode) return; e.preventDefault(); for (const t of e.changedTouches) if (t.identifier === lookId) { const dx = t.clientX - lastX, dy = t.clientY - lastY; if (Math.abs(dx) > 0.15) this._look.dx += dx * this.lookFactor; if (Math.abs(dy) > 0.15) this._look.dy += dy * this.lookFactor; lastX = t.clientX; lastY = t.clientY; } }, { passive: false });
     const endLook = (e) => { for (const t of e.changedTouches) if (t.identifier === lookId) lookId = null; };
     lookZone.addEventListener('touchend', endLook, { passive: false });
     lookZone.addEventListener('touchcancel', endLook, { passive: false });
@@ -185,10 +204,12 @@ export class TouchControls {
 
   _applyLayout(layout) {
     if (!layout) return;
+    const sx = layout._viewport?.width ? window.innerWidth / layout._viewport.width : 1;
+    const sy = layout._viewport?.height ? window.innerHeight / layout._viewport.height : 1;
     for (const b of this.buttons) {
       const p = layout[this._actionOf(b)];
       if (p) {
-        b.style.left = 'auto'; b.style.top = 'auto'; b.style.right = p.right + 'px'; b.style.bottom = p.bottom + 'px';
+        b.style.left = 'auto'; b.style.top = 'auto'; b.style.right = Math.max(0, p.right * sx) + 'px'; b.style.bottom = Math.max(0, p.bottom * sy) + 'px';
         this._setControlScale(b, p.scale);
       }
     }
@@ -196,13 +217,13 @@ export class TouchControls {
     if (joystick) {
       const stick = this.$('#tc-stick');
       stick.style.right = 'auto'; stick.style.top = 'auto';
-      stick.style.left = joystick.left + 'px'; stick.style.bottom = joystick.bottom + 'px';
+      stick.style.left = Math.max(0, joystick.left * sx) + 'px'; stick.style.bottom = Math.max(0, joystick.bottom * sy) + 'px';
       this._setControlScale(stick, joystick.scale);
     }
   }
 
   _saveLayout() {
-    const layout = {};
+    const layout = { _viewport: { width: window.innerWidth, height: window.innerHeight } };
     for (const b of this.buttons) {
       const r = b.getBoundingClientRect();
       layout[this._actionOf(b)] = {

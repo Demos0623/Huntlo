@@ -1,22 +1,22 @@
 import * as THREE from 'three';
 import { InputManager } from './Input/InputManager.js';
-import { TouchControls } from './Input/TouchControls.js?v=mobile-abilities';
+import { TouchControls } from './Input/TouchControls.js?v=smooth-mobile';
 import { isPerfMode, setPerfMode } from './perf.js';
-import { FPSCamera } from './Camera/FPSCamera.js';
+import { FPSCamera } from './Camera/FPSCamera.js?v=smooth-feedback';
 import { MovementController } from './Movement/MovementController.js';
 import { WeaponManager } from './Weapons/WeaponManager.js?v=mg-body-damage';
 import { ViewModel } from './Weapons/ViewModel.js?v=unique-reloads';
 import { WeaponModelLoader } from './Weapons/WeaponModelLoader.js';
-import { HitSystem } from './Combat/HitSystem.js';
+import { HitSystem } from './Combat/HitSystem.js?v=smooth-feedback';
 import { Target } from './Combat/Target.js';
-import { Bots } from './Combat/Bot.js?v=range-static-dps';
+import { Bots } from './Combat/Bot.js?v=smooth-feedback';
 import { AbilitySystem } from './Abilities/AbilitySystem.js';
-import { HUD } from './UI/HUD.js?v=spawn-shield';
+import { HUD } from './UI/HUD.js?v=smooth-feedback';
 import { BuyMenu } from './UI/BuyMenu.js';
 import { Weapons, Armor } from './Weapons/WeaponData.js';
 import { Minimap } from './UI/Minimap.js?v=training-range';
 import { ESP } from './UI/ESP.js';
-import { AudioManager } from './Audio/AudioManager.js';
+import { AudioManager } from './Audio/AudioManager.js?v=smooth-feedback';
 import { buildArena } from './World/Arena.js';
 import { buildTrainingRange } from './World/TrainingRange.js?v=range-static-dps';
 import { setupEnvironment } from './World/Environment.js';
@@ -77,6 +77,9 @@ class Game {
     this.camera = new FPSCamera(window.innerWidth / window.innerHeight);
     this.camera.yaw = this._spawns[team].yaw;
     this.movement = new MovementController(map.world, this._spawns[team].pos.clone());
+    this._physicsEyePrev = this.movement.eyePosition;
+    this._physicsEyeCurr = this._physicsEyePrev.clone();
+    this._renderEye = this._physicsEyePrev.clone();
     this.input = new InputManager(canvas);
 
     this.audio = new AudioManager();
@@ -660,6 +663,7 @@ class Game {
     this._overlay.style.display = 'none';
     this.movement.position.set(50, 0, 0);
     this.movement.velocity.set(0, 0, 0);
+    this._syncRenderEye();
     this.movement.fly = true;
     this.camera.yaw = 0;
     this.camera.pitch = 0;
@@ -974,7 +978,9 @@ class Game {
     }
     if (steps === MAX_STEPS) this._accum = 0;
 
-    this.camera.update(frameTime, this.movement.eyePosition);
+    const renderAlpha = Math.max(0, Math.min(1, this._accum / FIXED_DT));
+    this._renderEye.lerpVectors(this._physicsEyePrev, this._physicsEyeCurr, renderAlpha);
+    this.camera.update(frameTime, this._renderEye);
 
     this.env.sky.position.copy(this.camera.camera.position);
     this.hitSystem.update(frameTime);
@@ -987,7 +993,7 @@ class Game {
       occluders: this.occluders,
       ray: this._enemyRay,
       hitSystem: this.hitSystem,
-      dealDamage: (dmg, head) => this._takeDamage(dmg, head, 'bot'),
+      dealDamage: (dmg, head, source) => this._takeDamage(dmg, head, 'bot', source),
     });
     this._updateNuke(frameTime);
     this.abilities.update(frameTime);
@@ -1056,7 +1062,7 @@ class Game {
     this.remotePlayers.update(frameTime);
     this._updateSmokeEnemyVisibility();
 
-    this.playerModel.update(this.movement.eyePosition, this._bodyYaw(), this.movement.getAccuracyState(), frameTime);
+    this.playerModel.update(this._renderEye, this._bodyYaw(), this.movement.getAccuracyState(), frameTime);
 
     this.viewModel.update(frameTime, this.weapons, this.movement.getAccuracyState());
 
@@ -1298,6 +1304,7 @@ class Game {
     if (gy != null) y = gy;
     this.movement.position.set(nx, y, nz);
     this.movement.velocity.set(0, 0, 0);
+    this._syncRenderEye();
   }
 
   // Single source of truth for every cheat: how to read it and how to set it.
@@ -1545,6 +1552,7 @@ class Game {
     const sp = this._spawns[team];
     this.movement.position.copy(sp.pos);
     this.movement.velocity.set(0, 0, 0);
+    this._syncRenderEye();
     this.camera.yaw = sp.yaw; this.camera.pitch = 0;
     this._beginSpawnShield();
 
@@ -1571,6 +1579,7 @@ class Game {
     this.movement.world = map.world;
     this.movement.velocity.set(0, 0, 0);
     this.movement.position.copy(map.spawns[this._team]?.pos || map.spawns.attacker.pos);
+    this._syncRenderEye();
     this.camera.yaw = map.spawns[this._team]?.yaw ?? map.spawns.attacker.yaw;
     this.camera.pitch = 0;
     this._beginSpawnShield();
@@ -1654,7 +1663,20 @@ class Game {
     if (this.net?.connected) this.net.send({ t: 'spawnShield', on: !!on });
   }
 
-  _takeDamage(dmg, head, byId) {
+  _damageAngle(byId, source = null) {
+    let p = source;
+    if (!p && byId != null) p = this.remotePlayers?.players.get(byId)?.group?.position;
+    if (!p) return null;
+    const dx = p.x - this.movement.position.x;
+    const dz = p.z - this.movement.position.z;
+    const len = Math.hypot(dx, dz);
+    if (len < 1e-4) return 0;
+    const fx = -Math.sin(this.camera.yaw), fz = -Math.cos(this.camera.yaw);
+    const rx = Math.cos(this.camera.yaw), rz = -Math.sin(this.camera.yaw);
+    return Math.atan2((dx * rx + dz * rz) / len, (dx * fx + dz * fz) / len);
+  }
+
+  _takeDamage(dmg, head, byId, source = null) {
     if (this._god) return;
     if (this._dead || !dmg) return;
     if (this._spawnShield?.active) return;
@@ -1663,7 +1685,11 @@ class Game {
     if (this.shield > 0) { const a = Math.min(this.shield, d); this.shield -= a; d -= a; this.hud.setShield(this.shield); }
     this.health = Math.max(0, this.health - d);
     this.hud.setHealth(this.health);
-    this.hud.showDamage(Math.min(1.4, dmg / 45));
+    const intensity = Math.min(1.4, dmg / 45);
+    const direction = this._damageAngle(byId, source);
+    this.hud.showDamage(intensity, direction);
+    this.camera.addDamageKick(direction || 0, intensity, !!head);
+    this.audio.playDamage(!!head, intensity);
     if (this.health <= 0) this._die(true);
   }
 
@@ -1688,6 +1714,7 @@ class Game {
     const sp = this._spawns[this._team];
     this.movement.position.copy(sp.pos);
     this.movement.velocity.set(0, 0, 0);
+    this._syncRenderEye();
     this.camera.yaw = sp.yaw; this.camera.pitch = 0;
     this._beginSpawnShield();
     this.weapons.refillAll();
@@ -1720,7 +1747,9 @@ class Game {
     if (this.abilities.tablet) { moveInput.forward = moveInput.back = moveInput.left = moveInput.right = false; moveInput.jump = false; }
 
     const basis = this.camera.getMoveBasis();
+    this._physicsEyePrev.copy(this._physicsEyeCurr);
     this.movement.update(dt, moveInput, basis);
+    this._physicsEyeCurr.copy(this.movement.eyePosition);
     this._updateSpawnShield(dt);
 
     const weaponActions = locked ? {
@@ -1757,6 +1786,14 @@ class Game {
     if (locked && this.input.wasPressed('inspect')) this.viewModel.startInspect();
 
     this.audio.updateFootsteps(dt, this.movement.getAccuracyState());
+  }
+
+  _syncRenderEye() {
+    if (!this._physicsEyePrev || !this._physicsEyeCurr || !this._renderEye) return;
+    const eye = this.movement.eyePosition;
+    this._physicsEyePrev.copy(eye);
+    this._physicsEyeCurr.copy(eye);
+    this._renderEye.copy(eye);
   }
 }
 

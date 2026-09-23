@@ -125,7 +125,7 @@ export class Bot extends Target {
     const acc = this._d.hit * Math.max(0.35, 1 - dist / this._d.range);
     if (Math.random() < acc) {
       const head = Math.random() < 0.15;
-      ctx.dealDamage(head ? this._d.dmgHead : this._d.dmgBody, head);
+      ctx.dealDamage(head ? this._d.dmgHead : this._d.dmgBody, head, this.mesh.position);
     }
   }
 

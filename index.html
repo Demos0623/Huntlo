@@ -319,6 +319,39 @@
       color: #eaf0f7; font-family: inherit; font-weight: 700; letter-spacing: 2px; cursor: pointer; }
     .tc-edit-done { background: var(--accent); color: #0e1116; border-color: var(--accent); }
 
+    /* Mobile gameplay layout: reserve the right edge for touch actions and
+       scale secondary HUD panels out of the aiming area. */
+    #hud.v-touch-active #v-abilities { display: none; }
+    #hud.v-touch-active #v-bottom-left { transform: scale(0.78); transform-origin: bottom left; }
+    #hud.v-touch-active #v-bottom-right { right: clamp(205px, 25vw, 290px); transform: scale(0.76); transform-origin: bottom right; }
+    #hud.v-touch-active #v-minimap { transform: scale(0.74); transform-origin: top left; }
+    #hud.v-touch-active #v-chat { bottom: 112px; transform: scale(0.86); transform-origin: bottom left; }
+
+    @media (max-width: 900px), (max-height: 650px) {
+      #tc-buttons { right: max(6px, env(safe-area-inset-right)); bottom: max(6px, env(safe-area-inset-bottom));
+        transform: scale(0.8); transform-origin: bottom right; }
+      #tc-stick { left: 72px; bottom: 72px; }
+      .tc-customize { top: max(7px, env(safe-area-inset-top)); min-height: 32px; padding: 0 10px; font-size: 9px; }
+      #tc-mobile-badge { display: none; }
+      #hud.v-touch-active #v-minimap { transform: scale(0.62); }
+      #hud.v-touch-active #v-bottom-left { left: 10px; bottom: 9px; transform: scale(0.68); }
+      #hud.v-touch-active #v-bottom-right { right: min(250px, 31vw); bottom: 9px; transform: scale(0.68); }
+      #hud.v-touch-active #v-chat { left: 10px; bottom: 82px; transform: scale(0.76); }
+      #v-spawn-shield { top: max(8px, env(safe-area-inset-top)); transform: translateX(-50%) scale(0.82); }
+    }
+
+    @media (max-width: 600px) {
+      #tc-buttons { transform: scale(0.64); right: max(-14px, env(safe-area-inset-right)); }
+      #tc-stick { left: 58px; bottom: 64px; }
+      #hud.v-touch-active #v-minimap { transform: scale(0.5); }
+      #hud.v-touch-active #v-bottom-right { right: 178px; transform: scale(0.58); }
+      #hud.v-touch-active #v-bottom-left { transform: scale(0.58); }
+      #hud.v-touch-active #v-chat { bottom: 68px; transform: scale(0.66); }
+      #hud.v-touch-active #v-wname, #hud.v-touch-active #v-status { display: none; }
+      #tc-editbar { gap: 7px; padding: 7px; }
+      .tc-edit-hint { display: none; }
+    }
+
     /* Training range result panel */
     #v-training { position: fixed; top: 46px; left: 12px; z-index: 18; width: 210px; padding: 12px;
       border: 1px solid rgba(227,177,79,0.46); border-radius: 10px; background: rgba(8,12,18,0.92);
@@ -352,6 +385,11 @@
     /* Damage vignette (red edges when hurt) */
     #v-damage { position: fixed; inset: 0; z-index: 15; pointer-events: none; opacity: 0;
       box-shadow: inset 0 0 150px 45px rgba(200,10,10,0.7); }
+    #v-damage-dir { --damage-angle: 0rad; position: fixed; inset: 0; z-index: 16; pointer-events: none;
+      opacity: 0; transform: rotate(var(--damage-angle)); }
+    #v-damage-dir i { position: absolute; top: 12%; left: 50%; width: 76px; height: 24px;
+      transform: translateX(-50%); border-top: 5px solid rgba(255,72,72,0.95); border-radius: 50%;
+      filter: drop-shadow(0 1px 4px rgba(70,0,0,0.9)); }
 
     /* Death screen with a Respawn button */
     #v-death { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column;
@@ -532,6 +570,6 @@
        ?relay=wss://your-relay to the page URL. -->
   <script>window.HUNTLO_RELAY_URL = 'wss://huntlo-relay.demoslin0623.workers.dev';</script>
 
-  <script type="module" src="./Valo/main.js?v=crouch-hitbox"></script>
+  <script type="module" src="./Valo/main.js?v=smooth-feedback-mobile"></script>
 </body>
 </html>

@@ -9,6 +9,7 @@ import { Target } from '../Combat/Target.js';
 import { Movement as M } from '../config.js';
 import { buildArena } from '../World/Arena.js';
 import { RemotePlayers } from '../Net/RemotePlayers.js';
+import { FPSCamera } from '../Camera/FPSCamera.js';
 
 const DT = 1 / 120;
 const results = [];
@@ -208,6 +209,19 @@ export function runTests() {
     check('crouched remote head hit zone follows scaled model',
       p.classifyHit(new THREE.Vector3(0, 1.05, 0)) === 'head'
         && p.classifyHit(new THREE.Vector3(0, 0.75, 0)) === 'body');
+  }
+
+  {
+    const camera = new FPSCamera(16 / 9);
+    camera.addDamageKick(Math.PI / 2, 1, true);
+    const pitch = camera.impactPitch, yaw = camera.impactYaw;
+    camera.update(0.2, new THREE.Vector3());
+    check('damage feedback adds a restrained directional camera kick',
+      pitch > 0 && yaw > 0 && pitch < 0.03 && yaw < 0.03,
+      `pitch=${pitch.toFixed(4)} yaw=${yaw.toFixed(4)}`);
+    check('damage camera kick settles quickly',
+      camera.impactPitch < pitch * 0.1 && camera.impactYaw < yaw * 0.1,
+      `pitch=${camera.impactPitch.toFixed(4)} yaw=${camera.impactYaw.toFixed(4)}`);
   }
 
   {

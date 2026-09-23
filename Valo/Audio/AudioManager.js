@@ -106,6 +106,18 @@ export class AudioManager {
 
   playEmpty() { this._tone(1200, 0.04, 0.25, 'square', 700); }
 
+  playDamage(headshot = false, intensity = 1) {
+    const amount = Math.max(0.35, Math.min(1.3, intensity));
+    this._noiseBurst(headshot ? 0.07 : 0.05, headshot ? 2200 : 1100, 0.16 * amount, 'bandpass');
+    this._ping(headshot ? 190 : 110, {
+      dur: headshot ? 0.16 : 0.11,
+      gain: 0.18 * amount,
+      type: 'triangle',
+      slideTo: headshot ? 90 : 65,
+      attack: 0.003,
+    });
+  }
+
   playReload(duration) {
 
     this._tone(600, 0.05, 0.3, 'square', 300);

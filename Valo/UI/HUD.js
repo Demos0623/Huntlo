@@ -44,6 +44,7 @@ export class HUD {
         <div class="sb-rows"></div>
       </div>
       <div id="v-damage" aria-hidden="true"></div>
+      <div id="v-damage-dir" aria-hidden="true"><i></i></div>
       <div id="v-death" hidden>
         <div class="v-death-title">ELIMINATED</div>
         <button id="v-respawn" type="button">RESPAWN</button>
@@ -223,7 +224,7 @@ export class HUD {
     this.$('#v-training-hs-bar').style.width = `${hsRate}%`;
   }
 
-  showDamage(intensity = 1) {
+  showDamage(intensity = 1, direction = null) {
     const el = this.$('#v-damage');
     const peak = Math.min(0.85, 0.35 + intensity * 0.5);
     el.style.transition = 'none';
@@ -231,6 +232,16 @@ export class HUD {
     void el.offsetWidth;
     el.style.transition = 'opacity 500ms ease';
     el.style.opacity = '0';
+
+    const dir = this.$('#v-damage-dir');
+    if (dir && Number.isFinite(direction)) {
+      dir.style.setProperty('--damage-angle', `${direction}rad`);
+      dir.style.transition = 'none';
+      dir.style.opacity = String(Math.min(1, 0.55 + intensity * 0.35));
+      void dir.offsetWidth;
+      dir.style.transition = 'opacity 650ms ease-out';
+      dir.style.opacity = '0';
+    }
   }
 
   showDeath(onRespawn) {

@@ -15,6 +15,8 @@ export class FPSCamera {
     this.recoilYaw = 0;
     this._sinceRecoil = 99;
     this.noRecoil = false;
+    this.impactPitch = 0;
+    this.impactYaw = 0;
 
     this._targetFov = Cfg.fov;
     this._euler = new THREE.Euler(0, 0, 0, 'YXZ');
@@ -41,6 +43,12 @@ export class FPSCamera {
     this._sinceRecoil = 0;
   }
 
+  addDamageKick(relativeAngle = 0, intensity = 1, headshot = false) {
+    const amount = Math.max(0.25, Math.min(1.4, intensity));
+    this.impactPitch += (headshot ? 0.014 : 0.008) * amount;
+    this.impactYaw += Math.sin(relativeAngle) * 0.014 * amount;
+  }
+
   setAiming(aiming, fov) {
     this._targetFov = aiming ? (fov || Cfg.aimFov) : Cfg.fov;
   }
@@ -55,7 +63,16 @@ export class FPSCamera {
       this.recoilYaw -= this.recoilYaw * rec;
     }
 
-    this._euler.set(this.pitch + this.recoilPitch, this.yaw + this.recoilYaw, 0, 'YXZ');
+    const impactRecovery = 1 - Math.exp(-18 * Math.max(0, dt));
+    this.impactPitch += (0 - this.impactPitch) * impactRecovery;
+    this.impactYaw += (0 - this.impactYaw) * impactRecovery;
+
+    this._euler.set(
+      this.pitch + this.recoilPitch + this.impactPitch,
+      this.yaw + this.recoilYaw + this.impactYaw,
+      0,
+      'YXZ'
+    );
     this.camera.quaternion.setFromEuler(this._euler);
     this.camera.position.copy(eyePosition);
 
