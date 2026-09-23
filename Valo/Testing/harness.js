@@ -8,6 +8,7 @@ import { HitSystem } from '../Combat/HitSystem.js';
 import { Target } from '../Combat/Target.js';
 import { Movement as M } from '../config.js';
 import { buildArena } from '../World/Arena.js';
+import { RemotePlayers } from '../Net/RemotePlayers.js';
 
 const DT = 1 / 120;
 const results = [];
@@ -187,6 +188,29 @@ export function runTests() {
   }
 
   {
+    const scene = new THREE.Scene();
+    const remotes = new RemotePlayers(scene, [], () => {}, null);
+    const p = remotes.ensure('crouch-test');
+    p.setState({ seq: 1, x: 0, y: M.standingHeight - M.eyeOffset, z: 0, stance: 'stand' });
+    let senderHeight = M.standingHeight;
+    for (let i = 0; i < 30; i++) {
+      p._netHeightAt -= 1 / 30;
+      senderHeight += (M.crouchingHeight - senderHeight) * (1 - Math.exp(-M.crouchLerp / 30));
+      p.setState({ seq: 2 + i, x: 0, y: senderHeight - M.eyeOffset, z: 0, stance: 'crouch' });
+    }
+    p.update(1);
+    const visibleHeight = 1.72 * p.group.scale.y;
+    const lastRemoteState = p._buf[p._buf.length - 1];
+    check('crouched remote feet stay planted', Math.abs(lastRemoteState.y) < 0.02,
+      `feetY=${lastRemoteState.y.toFixed(3)}`);
+    check('crouched remote model matches capsule height', Math.abs(visibleHeight - M.crouchingHeight) < 0.01,
+      `model=${visibleHeight.toFixed(3)} capsule=${M.crouchingHeight.toFixed(3)}`);
+    check('crouched remote head hit zone follows scaled model',
+      p.classifyHit(new THREE.Vector3(0, 1.05, 0)) === 'head'
+        && p.classifyHit(new THREE.Vector3(0, 0.75, 0)) === 'body');
+  }
+
+  {
     const w = new Weapon(Weapons.vantage);
     for (let i = 0; i < w._equipT / DT + 80; i++) w.update(DT);
     const still = { speed: 0, speedFrac: 0, grounded: true, crouching: false, silentWalk: false, airborne: false, justJumped: false, turnPenalty: 0 };
@@ -269,7 +293,7 @@ export function runTests() {
     scene.updateMatrixWorld(true);
 
     const headY = t.headMinY + 0.08;
-    const bodyY = t.feetY + 0.7;
+    const bodyY = t.feetY + 1.05;
 
     t.health = t.maxHealth; t._downTimer = 0; t.mesh.rotation.z = 0;
     const bodyShot = hs.fireRay(new THREE.Vector3(0, bodyY, 0), new THREE.Vector3(0, 0, -1), 0, Weapons.vantage);
@@ -320,7 +344,7 @@ export function runTests() {
     const hs = new HitSystem(scene, [t.mesh]);
     scene.updateMatrixWorld(true);
     const before = t.health;
-    const res = hs.fireRay(new THREE.Vector3(0, t.feetY + 0.7, 0), new THREE.Vector3(0, 0, -1), 0, Weapons.operator);
+    const res = hs.fireRay(new THREE.Vector3(0, t.feetY + 1.05, 0), new THREE.Vector3(0, 0, -1), 0, Weapons.operator);
     check('sniper body damage is 150', res && Math.abs(res.damage - 150) < 0.5, `dmg=${res && res.damage.toFixed(1)}`);
     check('sniper one-shots a 150HP body', res && res.killed, `hp ${before} -> ${t.health} killed=${res && res.killed}`);
   }

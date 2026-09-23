@@ -2,7 +2,13 @@ import * as THREE from 'three';
 import { buildWeaponModel } from '../Weapons/WeaponModels.js';
 import { Movement as M } from '../config.js';
 
-const EYE = M.standingHeight - M.eyeOffset;
+// The procedural remote character runs from its planted feet at y=0 to the
+// top of its head at y=1.72. Scale from that authored height so the visible
+// model and its raycast meshes match the local standing/crouching capsule.
+const MODEL_HEIGHT = 1.72;
+const HEAD_HIT_MIN = 1.35;
+const STAND_SCALE_Y = M.standingHeight / MODEL_HEIGHT;
+const CROUCH_SCALE_Y = M.crouchingHeight / MODEL_HEIGHT;
 
 class RemotePlayer {
   constructor(scene, id, onHit, modelLoader) {
@@ -14,6 +20,7 @@ class RemotePlayer {
     this._wid = null;
 
     this.group = new THREE.Group();
+    this.group.scale.y = STAND_SCALE_Y;
     const mat = (hex) => new THREE.MeshStandardMaterial({ color: hex, roughness: 0.6, metalness: 0.12 });
 
     this._team = null;
@@ -144,6 +151,8 @@ class RemotePlayer {
     this._interpDelay = 0.12;
     this._lastSeq = -1;
     this._pitch = 0;
+    this._netHeight = M.standingHeight;
+    this._netHeightAt = performance.now() / 1000;
     this._moving = false; this._phase = 0; this._amp = 0;
   }
 
@@ -213,7 +222,8 @@ class RemotePlayer {
 
   classifyHit(point) {
     if (this.dead) return 'body';
-    return point.y >= this.group.position.y + 1.35 ? 'head' : 'body';
+    const headMin = this.group.position.y + HEAD_HIT_MIN * this.group.scale.y;
+    return point.y >= headMin ? 'head' : 'body';
   }
 
   applyDamage(amount, zone = 'body') {
@@ -242,9 +252,20 @@ class RemotePlayer {
     this._state = { ...this._state, ...d };
     const state = this._state;
 
+    // Network y is the sender's eye height. Recreate the same smoothed stance
+    // height before converting it back to planted feet; subtracting standing
+    // eye height unconditionally made crouching enemies sink into the floor.
+    const now = performance.now() / 1000;
+    const targetHeight = state.stance === 'crouch' ? M.crouchingHeight : M.standingHeight;
+    const stanceDt = Math.max(0, Math.min(0.25, now - this._netHeightAt));
+    const stanceBlend = 1 - Math.exp(-M.crouchLerp * stanceDt);
+    this._netHeight += (targetHeight - this._netHeight) * stanceBlend;
+    this._netHeightAt = now;
+    const eyeHeight = this._netHeight - M.eyeOffset;
+
     this._buf.push({
-      t: performance.now() / 1000,
-      x: state.x, y: (state.y ?? EYE) - EYE, z: state.z,
+      t: now,
+      x: state.x, y: (state.y ?? eyeHeight) - eyeHeight, z: state.z,
       yaw: state.yaw ?? 0,
       pitch: Math.max(-1.2, Math.min(1.2, state.pitch ?? 0)),
     });
@@ -301,8 +322,10 @@ class RemotePlayer {
     // Flashed players tilt their head up so others can tell they're blinded.
     this._headPivot.rotation.x = this._flashed ? 1.0 : this._pitch;
     this._gunHolder.rotation.x = this._pitch;
-    // Keep remote feet planted while communicating the smaller crouch stance.
-    this.group.scale.y += ((this._crouching ? 0.72 : 1) - this.group.scale.y) * Math.min(1, dt * 12);
+    // Keep remote feet planted while matching the visible/raycast model to the
+    // exact local collision-capsule height for each stance.
+    const stanceScale = this._crouching ? CROUCH_SCALE_Y : STAND_SCALE_Y;
+    this.group.scale.y += (stanceScale - this.group.scale.y) * Math.min(1, dt * M.crouchLerp);
 
     const target = this._moving ? 0.7 : 0;
     this._amp += (target - this._amp) * Math.min(1, dt * 10);

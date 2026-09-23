@@ -23,7 +23,7 @@ import { setupEnvironment } from './World/Environment.js';
 import { buildRTX } from './Render/RTX.js';
 import { PlayerModel } from './World/PlayerModel.js';
 import { Net } from './Net/Net.js';
-import { RemotePlayers } from './Net/RemotePlayers.js?v=spawn-shield';
+import { RemotePlayers } from './Net/RemotePlayers.js?v=crouch-hitbox';
 
 const FIXED_DT = 1 / 120;
 const MAX_STEPS = 5;
