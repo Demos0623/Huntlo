@@ -98,6 +98,26 @@
     #v-status.v-equip { color: #8fb6ff; }
     #v-status.v-empty { color: var(--hit); }
 
+    #v-chat { position: absolute; z-index: 24; left: 24px; bottom: 138px; width: min(360px, calc(100vw - 48px)); pointer-events: none; }
+    #v-chat-feed { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; margin-bottom: 8px; }
+    .v-chat-message { max-width: 100%; padding: 6px 9px; border-left: 2px solid rgba(140, 217, 255, 0.9); border-radius: 0 7px 7px 0;
+      background: rgba(8, 13, 20, 0.74); color: #e4edf6; font-size: 12px; line-height: 1.35; text-shadow: 0 1px 2px #000;
+      transition: opacity 280ms ease, transform 280ms ease; overflow-wrap: anywhere; }
+    .v-chat-message b { color: #9ee7ff; }
+    .v-chat-message.v-chat-mine { border-left-color: var(--accent); }
+    .v-chat-message.v-chat-mine b { color: #ffe09b; }
+    .v-chat-message.v-chat-fade { opacity: 0; transform: translateX(-8px); }
+    #v-chat-toggle, #v-chat-form { pointer-events: auto; }
+    #v-chat-toggle { min-height: 30px; padding: 0 12px; border: 1px solid #426077; border-radius: 7px; background: rgba(15, 28, 40, 0.88);
+      color: #b9eaff; font: 800 10px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 1.8px; cursor: pointer; }
+    #v-chat-toggle:hover { border-color: #8ee8ff; color: #fff; }
+    #v-chat-form { display: flex; gap: 6px; }
+    #v-chat-input { min-width: 0; flex: 1; height: 34px; padding: 0 10px; border: 1px solid #5a8ca5; border-radius: 7px; outline: none;
+      background: rgba(8, 15, 23, 0.96); color: #edfaff; font: 12px/1 ui-monospace, "SF Mono", Menlo, monospace; }
+    #v-chat-input:focus { border-color: #9cecff; box-shadow: 0 0 0 2px rgba(93, 216, 255, 0.18); }
+    #v-chat-form button { min-width: 58px; border: 1px solid #76d9ef; border-radius: 7px; background: #3c9fb7; color: #071419;
+      font: 800 10px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 1px; cursor: pointer; }
+
     #v-spawn-shield {
       position: absolute; top: 22px; left: 50%; transform: translateX(-50%);
       display: flex; flex-direction: column; align-items: center; gap: 3px;
@@ -512,6 +532,6 @@
        ?relay=wss://your-relay to the page URL. -->
   <script>window.HUNTLO_RELAY_URL = 'wss://huntlo-relay.demoslin0623.workers.dev';</script>
 
-  <script type="module" src="./Valo/main.js?v=closed-crosshair"></script>
+  <script type="module" src="./Valo/main.js?v=match-chat"></script>
 </body>
 </html>

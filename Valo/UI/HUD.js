@@ -13,6 +13,14 @@ export class HUD {
         <div class="v-hm v-hm-t"></div><div class="v-hm v-hm-b"></div>
         <div class="v-hm v-hm-l"></div><div class="v-hm v-hm-r"></div>
       </div>
+      <section id="v-chat" aria-label="Match chat">
+        <div id="v-chat-feed" aria-live="polite" aria-relevant="additions"></div>
+        <form id="v-chat-form" hidden>
+          <input id="v-chat-input" type="text" maxlength="160" autocomplete="off" placeholder="Type a message…" aria-label="Chat message" />
+          <button type="submit">SEND</button>
+        </form>
+        <button id="v-chat-toggle" type="button">CHAT</button>
+      </section>
       <div id="v-spawn-shield" hidden aria-live="polite">
         <span>SPAWN SHIELD</span><b>MOVE TO START TIMER</b>
       </div>
@@ -105,6 +113,7 @@ export class HUD {
     this._hitTimer = 0;
     this._toastTimer = 0;
     this._bannerTimer = 0;
+    this._chatOpen = false;
     this._setGap(H.crosshairBaseGap);
     window.addEventListener('keydown', (e) => {
       if (e.repeat) return;
@@ -120,6 +129,69 @@ export class HUD {
       e.stopPropagation();
       this._trainingReset?.();
     });
+    this.$('#v-chat-toggle').addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.openChat();
+    });
+    this.$('#v-chat-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = this.$('#v-chat-input');
+      const text = input.value.trim();
+      if (!text) return this.closeChat();
+      if (this._chatSend?.(text) !== false) {
+        input.value = '';
+        this.closeChat();
+      }
+    });
+    this.$('#v-chat-input').addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Escape') { e.preventDefault(); this.closeChat(); }
+    });
+  }
+
+  setChatHandlers({ onToggle, onSend } = {}) {
+    this._chatToggle = onToggle;
+    this._chatSend = onSend;
+  }
+
+  isChatOpen() { return this._chatOpen; }
+
+  openChat() {
+    if (this._chatOpen) return;
+    this._chatOpen = true;
+    this.$('#v-chat-form').hidden = false;
+    this.$('#v-chat-toggle').hidden = true;
+    this._chatToggle?.(true);
+    requestAnimationFrame(() => this.$('#v-chat-input').focus());
+  }
+
+  closeChat() {
+    if (!this._chatOpen) return;
+    this._chatOpen = false;
+    this.$('#v-chat-form').hidden = true;
+    this.$('#v-chat-toggle').hidden = false;
+    this.$('#v-chat-input').blur();
+    this._chatToggle?.(false);
+  }
+
+  addChatMessage(name, message, mine = false) {
+    const text = String(message || '').trim().slice(0, 160);
+    if (!text) return;
+    const row = document.createElement('div');
+    row.className = 'v-chat-message' + (mine ? ' v-chat-mine' : '');
+    const who = document.createElement('b');
+    who.textContent = `${String(name || 'PLAYER').slice(0, 16)}:`;
+    const body = document.createElement('span');
+    body.textContent = ` ${text}`;
+    row.append(who, body);
+    const feed = this.$('#v-chat-feed');
+    feed.appendChild(row);
+    while (feed.children.length > 6) feed.removeChild(feed.firstChild);
+    setTimeout(() => {
+      if (this._chatOpen || !row.isConnected) return;
+      row.classList.add('v-chat-fade');
+      setTimeout(() => row.remove(), 280);
+    }, 9000);
   }
 
   setHealth(hp) {

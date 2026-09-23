@@ -95,6 +95,10 @@ class Game {
     this.rangeBots.spawn(rangeMap.staticBotSpawn, 'STATIC BOT', { static: true });
     this.bots = this.homeBots;
     this.hud = new HUD(document.getElementById('hud'));
+    this.hud.setChatHandlers({
+      onToggle: (open) => this._setChatOpen(open),
+      onSend: (text) => this._sendChat(text),
+    });
     this._trainingStats = { shots: 0, hits: 0, headshots: 0, damage: 0, startedAt: null };
     this.hud.setTrainingReset(() => this._resetTrainingStats());
     this.hud.setTrainingStats(this._trainingStats);
@@ -415,6 +419,18 @@ class Game {
     };
     this._closeConsole = closeConsole;
     window.addEventListener('keydown', (e) => {
+      if (this.hud?.isChatOpen()) {
+        if (e.key === 'Escape') { e.preventDefault(); this.hud.closeChat(); }
+        return;
+      }
+      if (e.key !== 'Enter' || e.repeat || this._dead) return;
+      const active = document.activeElement;
+      if (active && active !== document.body && active !== document.documentElement) return;
+      if (this._overlay && this._overlay.style.display !== 'none') return;
+      e.preventDefault();
+      this.hud?.openChat();
+    });
+    window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && codeListEl && !codeListEl.hidden) {
         e.preventDefault();
         closeCodeList();
@@ -588,6 +604,10 @@ class Game {
         if (m.id === this.net.id) return;
         this._spawnNuke(m.cx, m.cz, false);
       })
+      .on('chat', (m) => {
+        if (m.id === this.net.id) return;
+        this.hud?.addChatMessage(m.name, m.message, false);
+      })
       .on('shot', (m) => {
 
         if (m.id === this.net.id || !m.o || !m.e) return;
@@ -742,6 +762,7 @@ class Game {
     const lock = () => {
       if (this._dead) return;
       if (this.buyMenu?.isOpen) return;
+      if (this.hud?.isChatOpen()) return;
       if (this.controlMode === 'mobile' && this.touch) {
         if (!this.touch.engaged) {
           this.touch.engaged = true;
@@ -772,8 +793,34 @@ class Game {
       const locked = document.pointerLockElement === canvas;
       if (locked) this._closeConsole?.();
 
-      if (this._overlay) this._overlay.style.display = (locked || this.buyMenu?.isOpen || this._dead) ? 'none' : '';
+      if (this._overlay) this._overlay.style.display = (locked || this.buyMenu?.isOpen || this._dead || this.hud?.isChatOpen()) ? 'none' : '';
     });
+  }
+
+  _setChatOpen(open) {
+    if (open) {
+      try { document.exitPointerLock?.(); } catch (_) { /* ignore */ }
+      this.input.pointerLocked = false;
+      if (this.touch) { this.touch.engaged = false; this.touch.setVisible(false); }
+      if (this._overlay) this._overlay.style.display = 'none';
+      return;
+    }
+    if (this._dead || this.buyMenu?.isOpen) return;
+    if (this.controlMode === 'mobile' && this.touch) {
+      this.touch.engaged = true;
+      this.touch.setVisible(true);
+    } else {
+      this.input.requestPointerLock(this.renderer.domElement);
+    }
+  }
+
+  _sendChat(text) {
+    const message = String(text || '').trim().replace(/\s+/g, ' ').slice(0, 160);
+    if (!message) return false;
+    const name = (this.nickname || 'PLAYER').slice(0, 16);
+    this.hud?.addChatMessage(name, message, true);
+    this.net?.send({ t: 'chat', name, message });
+    return true;
   }
 
   // Toggle RTX post-processing. Builds the composer lazily the first time it's
@@ -1623,6 +1670,7 @@ class Game {
   _die(report) {
     if (this._dead) return;
     this._dead = true;
+    this.hud?.closeChat();
     this._score(this.net.id ?? 'me', this.nickname).deaths++;
     // Bots are local-only; their damage still follows the old local path.
     // Multiplayer deaths are emitted by the relay after it updates HP.
